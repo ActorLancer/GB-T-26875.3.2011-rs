@@ -1,0 +1,82 @@
+[package]
+name = "gb26875"
+version = "0.1.0"
+edition = "2021"
+rust-version = "1.70"
+authors = ["Your Name <your.email@example.com>"]
+description = "GB26875 城市消防远程监控系统通信协议的 Rust 实现"
+documentation = "https://docs.rs/gb26875"
+repository = "https://github.com/yourusername/gb26875"
+license = "MIT OR Apache-2.0"
+keywords = ["gb26875", "fire-alarm", "protocol", "iot", "monitoring"]
+categories = ["encoding", "network-programming", "parser-implementations"]
+readme = "README.md"
+
+[dependencies]
+# 核心依赖
+bytes = "1"
+thiserror = "1"
+encoding_rs = { version = "0.8", optional = true }
+once_cell = "1"
+
+# 日志 facade（只依赖接口）
+log = { version = "0.4", optional = true }
+
+# Serde 支持
+serde = { version = "1", features = ["derive"], optional = true }
+serde_json = { version = "1", optional = true }
+
+# 异步支持
+tokio = { version = "1", features = ["net", "io-util"], optional = true }
+tokio-util = { version = "0.7", features = ["codec"], optional = true }
+
+[dev-dependencies]
+# 测试
+hex = "0.4"
+tokio = { version = "1", features = ["full"] }
+env_logger = "0.11"
+
+# 基准测试
+criterion = "0.5"
+
+[features]
+default = []
+
+# 序列化支持
+serde = ["dep:serde", "dep:serde_json"]
+
+# 异步支持
+async = ["dep:tokio", "dep:tokio-util"]
+
+# 日志支持
+logging = ["dep:log"]
+
+# 字符串编码支持
+encoding = ["dep:encoding_rs"]
+
+# 完整功能
+full = ["serde", "async", "logging", "encoding"]
+
+# Examples will be added later
+# [[example]]
+# name = "tcp_server"
+# required-features = ["async"]
+
+# [[example]]
+# name = "tcp_client"
+# required-features = ["async"]
+
+# [[example]]
+# name = "logging_demo"
+# required-features = ["logging"]
+
+# Benchmarks will be added later
+# [[bench]]
+# name = "codec_bench"
+# harness = false
+
+[package.metadata.docs.rs]
+# 在 docs.rs 上构建时启用所有 features
+all-features = true
+# 设置文档中显示的目标平台
+targets = ["x86_64-unknown-linux-gnu"]
