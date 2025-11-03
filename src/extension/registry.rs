@@ -146,7 +146,7 @@ impl ThreadSafeExtensionRegistry {
                 reason: "无法获取注册表写锁".to_string(),
             })?;
 
-        let type_info = inner.type_infos.remove(&type_id);
+        let _type_info = inner.type_infos.remove(&type_id);
         let factory_removed = inner.factories.remove(&type_id).is_some();
 
         if !factory_removed {

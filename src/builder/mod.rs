@@ -9,7 +9,7 @@ pub mod data_unit;
 pub use packet::*;
 pub use data_unit::*;
 
-use crate::error::{EncodeError, EncodeResult};
+use crate::error::EncodeResult;
 
 /// 通用构建器 trait
 /// 
@@ -33,7 +33,7 @@ pub trait Builder<T> {
 /// 可重置的构建器 trait
 /// 
 /// 为支持重用的构建器提供重置功能
-pub trait ResettableBuilder<T>: Builder<T> {
+pub trait ResettableBuilder<T>: Builder<T> + Clone {
     /// 重置构建器到初始状态
     fn reset(&mut self);
     
@@ -42,7 +42,8 @@ pub trait ResettableBuilder<T>: Builder<T> {
     /// # Returns
     /// * `Result<T, EncodeError>` - 成功返回构建的对象
     fn build_and_reset(&mut self) -> EncodeResult<T> {
-        let result = self.build();
+        let cloned = self.clone();
+        let result = cloned.build();
         if result.is_ok() {
             self.reset();
         }
@@ -52,9 +53,8 @@ pub trait ResettableBuilder<T>: Builder<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::*;
-
-    // 测试用的简单构建器
+    use super::*;    // 测试用的简单构建器
+    #[derive(Clone)]
     struct TestBuilder {
         value: Option<u32>,
     }

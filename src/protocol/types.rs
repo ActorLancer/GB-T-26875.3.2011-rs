@@ -1,6 +1,6 @@
 //! GB26875 协议类型定义
 
-use crate::error::{ParseError, ParseResult};
+/// GB26875 协议中用到的所有类型定义
 
 /// 系统类型定义
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -594,7 +594,7 @@ impl AnalogType {
             Self::Time => Some((0, 32000)),
             Self::Voltage => Some((0, 3200)), // 0.0V - 320.0V
             Self::Current => Some((0, 3200)), // 0.0A - 320.0A
-            Self::Flow => Some((0, 65535)),
+            Self::Flow => Some((0, 32767)), // 修正为i16最大值
             Self::AirFlow => Some((0, 3200)), // 0.0m³/min - 320.0m³/min
             Self::WindSpeed => Some((0, 20)), // 0m/s - 20m/s
             Self::Reserved(_) => None,

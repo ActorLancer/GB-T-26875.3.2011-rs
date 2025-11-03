@@ -172,7 +172,7 @@ impl PacketBuilder {
     /// 
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn data_unit(mut self, data_unit: GenericDataUnit) -> EncodeResult<Self> {
+    pub fn data_unit(self, data_unit: GenericDataUnit) -> EncodeResult<Self> {
         let encoded = data_unit.encode()?;
         self.data_unit_bytes(encoded)
     }
@@ -302,9 +302,7 @@ impl PacketBuilder {
 
 impl Builder<Packet> for PacketBuilder {
     fn build(self) -> EncodeResult<Packet> {
-        self.validate()?;
-
-        let control_unit = ControlUnit::new(
+        self.validate()?;        let control_unit = ControlUnit::new(
             self.sequence.unwrap(),
             self.version.unwrap(),
             self.timestamp.unwrap(),
@@ -312,7 +310,7 @@ impl Builder<Packet> for PacketBuilder {
             self.dest_addr.unwrap(),
             self.data_unit.as_ref().map(|d| d.len()).unwrap_or(0) as u16,
             self.command.unwrap(),
-        );
+        ).map_err(|e| EncodeError::TypeConversion(format!("Control unit creation failed: {}", e)))?;
 
         Packet::new(control_unit, self.data_unit)
     }

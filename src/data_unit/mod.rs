@@ -8,9 +8,9 @@ pub mod standard;
 // 重新导出主要类型
 pub use standard::*;
 
-use crate::error::{ParseError, ParseResult, EncodeError, EncodeResult};
+use crate::error::{ParseResult, EncodeResult};
 use crate::protocol::DataUnitType;
-use bytes::{Bytes, Buf, BufMut, BytesMut};
+use bytes::Bytes;
 
 /// 应用数据单元 trait
 /// 

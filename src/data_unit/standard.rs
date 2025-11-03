@@ -7,7 +7,7 @@ use crate::error::{ParseError, ParseResult, EncodeError, EncodeResult};
 use crate::data_unit::DataUnit;
 use crate::protocol::{DataUnitType, SystemType, ComponentType as ProtocolComponentType, AnalogType};
 use crate::frame::Timestamp;
-use bytes::{Bytes, Buf, BufMut, BytesMut};
+use bytes::{Bytes, BufMut, BytesMut};
 
 /// 系统状态数据单元（类型 1，4字节）
 /// 
@@ -21,8 +21,7 @@ pub struct SystemStatus {
     pub system_address: u32, // 实际只使用低3字节
 }
 
-impl SystemStatus {
-    /// 创建新的系统状态
+impl SystemStatus {    /// 创建新的系统状态
     /// 
     /// # Arguments
     /// * `system_type` - 系统类型
@@ -35,6 +34,7 @@ impl SystemStatus {
             return Err(EncodeError::InvalidValue {
                 field: "system_address".to_string(),
                 value: system_address.to_string(),
+                reason: "System address must be <= 0xFFFFFF (3 bytes)".to_string(),
             });
         }
 
@@ -120,12 +120,12 @@ impl ComponentType {
         system_type: SystemType,
         system_address: u32,
         component_type: ProtocolComponentType,
-        component_address: u32,
-    ) -> EncodeResult<Self> {
+        component_address: u32,    ) -> EncodeResult<Self> {
         if system_address > 0xFFFFFF {
             return Err(EncodeError::InvalidValue {
                 field: "system_address".to_string(),
                 value: system_address.to_string(),
+                reason: "System address must be <= 0xFFFFFF (3 bytes)".to_string(),
             });
         }
 
@@ -233,12 +233,12 @@ impl ComponentStatus {
         component_type: ProtocolComponentType,
         component_address: u32,
         status: u8,
-        description: Vec<u8>,
-    ) -> EncodeResult<Self> {
+        description: Vec<u8>,    ) -> EncodeResult<Self> {
         if system_address > 0xFFFFFF {
             return Err(EncodeError::InvalidValue {
                 field: "system_address".to_string(),
                 value: system_address.to_string(),
+                reason: "System address must be <= 0xFFFFFF (3 bytes)".to_string(),
             });
         }
 
@@ -246,6 +246,7 @@ impl ComponentStatus {
             return Err(EncodeError::InvalidValue {
                 field: "description".to_string(),
                 value: format!("{} bytes", description.len()),
+                reason: "Description must be <= 31 bytes".to_string(),
             });
         }
 
@@ -397,7 +398,7 @@ impl std::fmt::Display for ComponentStatus {
     }
 }
 
-/// 模拟量值数据单元（类型 4，10字节）
+/// 模拟量值数据单元（类型 3，10字节）
 /// 
 /// 用于上报模拟量的当前值
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -408,11 +409,11 @@ pub struct AnalogValue {
     /// 系统地址（1字节）
     pub system_address: u8,
     /// 部件类型（1字节）
-    pub analog_type: AnalogType,
+    pub component_type: ProtocolComponentType,
     /// 部件地址（4字节）
-    pub unit_address: u32,
+    pub component_address: u32,
     /// 模拟量类型（1字节）
-    pub analog_address: u8,
+    pub analog_type: AnalogType,
     /// 模拟量值（2字节）
     pub value: i16,
 }
@@ -422,25 +423,18 @@ impl AnalogValue {
     pub fn new(
         system_type: SystemType,
         system_address: u8,
+        component_type: ProtocolComponentType,
+        component_address: u32,
         analog_type: AnalogType,
-        unit_address: u32,
-        analog_address: u8,
         value: i16,
     ) -> EncodeResult<Self> {
-        if system_address > 0xFFFFFF {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: system_address.to_string(),
-            });
-        }
-
         Ok(AnalogValue {
             system_type,
             system_address,
+            component_type,
+            component_address,
             analog_type,
-            unit_address,
             value,
-            analog_address,
         })
     }
 }
@@ -456,18 +450,19 @@ impl DataUnit for AnalogValue {
         // 系统类型（1字节）
         buf.put_u8(self.system_type.to_u8());
         
-        // 系统地址（3字节，小端序）
-        buf.put_u8((self.system_address & 0xFF) as u8);
-        buf.put_u8(((self.system_address >> 8) & 0xFF) as u8);
-        buf.put_u8(((self.system_address >> 16) & 0xFF) as u8);
+        // 系统地址（1字节）
+        buf.put_u8(self.system_address);
+        
+        // 部件类型（1字节）
+        buf.put_u8(self.component_type.to_u8());
+        
+        // 部件地址（4字节，小端序）
+        buf.put_u32_le(self.component_address);
         
         // 模拟量类型（1字节）
         buf.put_u8(self.analog_type.to_u8());
-        
-        // 模拟量地址（2字节，小端序）
-        buf.put_u16_le(self.analog_address as u16);
 
-        // 模拟量值（2字节，小端序整数）
+        // 模拟量值（2字节，小端序有符号整数）
         buf.put_i16_le(self.value);
         
         Ok(buf.freeze())
@@ -482,31 +477,23 @@ impl DataUnit for AnalogValue {
         }
 
         let system_type = SystemType::from_u8(data[0]);
-        let system_address = u32::from_le_bytes([data[1], data[2], data[3], 0]);
-        let analog_type = AnalogType::from_u8(data[4]);
-        let analog_address = u32::from_le_bytes([data[5], data[6], data[7], data[8]]);
-        
-        // 解析浮点值
-        let value_bytes = [data[9], data[10], data[11], data[12]];
-        let value = f32::from_le_bytes(value_bytes);
-
-        Ok(AnalogValue {
+        let system_address = data[1];
+        let component_type = ProtocolComponentType::from_u8(data[2]);
+        let component_address = u32::from_le_bytes([data[3], data[4], data[5], data[6]]);
+        let analog_type = AnalogType::from_u8(data[7]);
+        let value = i16::from_le_bytes([data[8], data[9]]);        Ok(AnalogValue {
             system_type,
             system_address,
+            component_type,
+            component_address,
             analog_type,
-            analog_address,
             value,
         })
     }
 
     fn validate(&self) -> ParseResult<()> {
-        if self.system_address > 0xFFFFFF {
-            return Err(ParseError::InvalidValue {
-                field: "system_address".to_string(),
-                value: self.system_address.to_string(),
-            });
-        }
-        
+        // 模拟量值在i16范围内，无需额外验证
+        // 系统地址是u8，自动满足范围要求
         Ok(())
     }
 }
@@ -515,10 +502,10 @@ impl std::fmt::Display for AnalogValue {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         write!(
             f,
-            "AnalogValue {{ sys: {:?}@0x{:06X}, analog: {:?}@0x{:08X}, value: {} }}",
+            "AnalogValue {{ sys: {:?}@0x{:02X}, comp: {:?}@0x{:08X}, analog: {:?}, value: {} }}",
             self.system_type, self.system_address,
-            self.analog_type, self.analog_address,
-            self.value
+            self.component_type, self.component_address,
+            self.analog_type, self.value
         )
     }
 }
@@ -816,10 +803,8 @@ impl Time {
 
 impl DataUnit for Time {    fn data_unit_type(&self) -> DataUnitType {
         DataUnitType::UploadSystemTime
-    }
-
-    fn encode(&self) -> EncodeResult<Bytes> {
-        Ok(self.timestamp.encode())
+    }    fn encode(&self) -> EncodeResult<Bytes> {
+        Ok(self.timestamp.encode()?)
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
@@ -846,34 +831,32 @@ mod tests {
         
         assert_eq!(status, decoded);
         assert_eq!(encoded.len(), 4);
-    }
-
-    #[test]
+    }    #[test]
     fn test_analog_value() {
         let value = AnalogValue::new(
             SystemType::AutoSprinkler,
-            0x123456,
+            0x12, // system_address is u8
+            ProtocolComponentType::SmokeFireDetector,
+            0x87654321, // component_address
             AnalogType::Temperature,
-            0x87654321,
-            25.5,
+            256, // value as i16 (25.5 * 10 for 0.1℃ precision)
         ).unwrap();
         
         let encoded = value.encode().unwrap();
         let decoded = AnalogValue::parse(&encoded).unwrap();
-        
-        assert_eq!(value.system_type, decoded.system_type);
+          assert_eq!(value.system_type, decoded.system_type);
         assert_eq!(value.system_address, decoded.system_address);
+        assert_eq!(value.component_type, decoded.component_type);
+        assert_eq!(value.component_address, decoded.component_address);
         assert_eq!(value.analog_type, decoded.analog_type);
-        assert_eq!(value.analog_address, decoded.analog_address);
-        assert!((value.value - decoded.value).abs() < f32::EPSILON);
+        assert_eq!(value.value, decoded.value);
     }
 
     #[test]
     fn test_component_status() {
         let status = ComponentStatus::with_description_str(
-            SystemType::FireAlarm,
-            0x123456,
-            ProtocolComponentType::SmokeDetector,
+            SystemType::FireAlarm,            0x123456,
+            ProtocolComponentType::SmokeFireDetector,
             0x87654321,
             0x01,
             "测试部件",

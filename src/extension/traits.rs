@@ -2,33 +2,12 @@
 //!
 //! 定义了扩展数据单元需要实现的 trait 和相关类型
 
-use crate::error::{EncodeError, ParseError};
+use crate::error::{EncodeError, ParseError, ExtensionError, ExtensionResult};
 use bytes::Bytes;
 use std::any::Any;
 use std::fmt;
 
-/// 扩展操作结果类型别名
-pub type ExtensionResult<T> = Result<T, ExtensionError>;
 
-/// 扩展错误类型
-#[derive(Debug, thiserror::Error)]
-pub enum ExtensionError {
-    /// 编码错误
-    #[error("编码错误: {0}")]
-    EncodeError(#[from] EncodeError),
-    
-    /// 解析错误
-    #[error("解析错误: {0}")]
-    ParseError(#[from] ParseError),
-    
-    /// 验证错误
-    #[error("验证失败: {reason}")]
-    ValidationError { reason: String },
-    
-    /// 类型转换错误
-    #[error("类型转换失败: 期望 {expected}, 实际 {actual}")]
-    TypeMismatch { expected: String, actual: String },
-}
 
 /// 扩展数据单元 trait
 /// 

@@ -2,11 +2,11 @@
 //!
 //! 提供数据包和数据单元的编解码功能，支持 TCP 流处理和异步操作
 
-use crate::error::{ParseError, ParseResult, EncodeError, EncodeResult};
+use crate::error::{ParseError, ParseResult, EncodeResult};
 use crate::frame::Packet;
 use crate::data_unit::GenericDataUnit;
 use crate::protocol::DataUnitType;
-use bytes::{Bytes, BytesMut, BufMut};
+use bytes::{Bytes, BytesMut, BufMut, Buf};
 
 /// GB26875 编解码器 trait
 /// 
@@ -215,11 +215,13 @@ impl StreamCodec {
     /// 获取缓冲区容量
     pub fn buffer_capacity(&self) -> usize {
         self.buffer.capacity()
-    }
-
-    /// 压缩缓冲区（释放未使用的容量）
+    }    /// 压缩缓冲区（释放未使用的容量）
     pub fn shrink_buffer(&mut self) {
-        self.buffer.shrink_to_fit();
+        // BytesMut 没有 shrink_to_fit，我们可以重新创建一个更小的缓冲区
+        if self.buffer.len() < self.buffer.capacity() / 2 {
+            let data = self.buffer.split().freeze();
+            self.buffer = BytesMut::from(&data[..]);
+        }
     }
 }
 

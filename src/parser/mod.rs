@@ -5,7 +5,7 @@
 use crate::error::{ParseError, ParseResult};
 use crate::protocol::constants::*;
 use crate::frame::Packet;
-use bytes::{Bytes, BytesMut, Buf, BufMut};
+use bytes::{Bytes, BytesMut, Buf};
 
 /// 帧边界检测器
 ///

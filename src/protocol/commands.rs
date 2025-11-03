@@ -1,6 +1,6 @@
 //! GB26875 协议命令定义
 
-use crate::error::{ParseError, ParseResult};
+/// GB26875 命令字节定义
 
 /// 控制单元命令字节定义
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -111,16 +111,14 @@ impl Command {
     /// 获取对应的拒绝命令
     pub fn get_reject_command(&self) -> Self {
         Self::Reject
-    }
-
-    /// 心跳命令别名
-    pub const Heartbeat: Self = Self::SendData;
+    }    /// 心跳命令别名
+    pub const HEARTBEAT: Self = Self::SendData;
     /// 状态查询别名  
-    pub const StatusQuery: Self = Self::Request;
+    pub const STATUS_QUERY: Self = Self::Request;
     /// 状态上传别名
-    pub const StatusUpload: Self = Self::SendData;
+    pub const STATUS_UPLOAD: Self = Self::SendData;
     /// 确认别名
-    pub const Acknowledgment: Self = Self::Acknowledge;
+    pub const ACKNOWLEDGMENT: Self = Self::Acknowledge;
 }
 
 /// 协议版本

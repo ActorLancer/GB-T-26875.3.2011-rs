@@ -9,7 +9,7 @@ pub mod traits;
 pub use registry::*;
 pub use traits::*;
 
-use crate::error::{ParseError, ParseResult, EncodeError, EncodeResult, ExtensionError};
+use crate::error::{ParseError, ParseResult, ExtensionError, ExtensionResult};
 use crate::protocol::DataUnitType;
 use crate::data_unit::GenericDataUnit;
 use bytes::Bytes;

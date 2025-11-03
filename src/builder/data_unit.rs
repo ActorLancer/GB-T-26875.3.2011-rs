@@ -4,7 +4,7 @@
 
 use crate::builder::{Builder, ResettableBuilder};
 use crate::error::{EncodeError, EncodeResult};
-use crate::data_unit::{GenericDataUnit, standard::*};
+use crate::data_unit::standard::*;
 use crate::protocol::{SystemType, ComponentType, AnalogType};
 
 /// 系统状态构建器
@@ -274,7 +274,7 @@ impl ComponentStatusBuilder {
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn smoke_detector(self) -> Self {
-        self.component_type(ComponentType::SmokeDetector)
+        self.component_type(ComponentType::SmokeFireDetector)
     }
 
     /// 设置为温度探测器类型
@@ -282,7 +282,7 @@ impl ComponentStatusBuilder {
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn temperature_detector(self) -> Self {
-        self.component_type(ComponentType::TemperatureDetector)
+        self.component_type(ComponentType::TemperatureFireDetector)
     }
 }
 
@@ -360,8 +360,9 @@ impl ResettableBuilder<ComponentStatus> for ComponentStatusBuilder {
 pub struct AnalogValueBuilder {
     system_type: Option<SystemType>,
     system_address: Option<u32>,
+    component_type: Option<ComponentType>,
+    component_address: Option<u32>,
     analog_type: Option<AnalogType>,
-    analog_address: Option<u32>,
     value: Option<f32>,
 }
 
@@ -371,8 +372,9 @@ impl AnalogValueBuilder {
         AnalogValueBuilder {
             system_type: None,
             system_address: None,
+            component_type: None,
+            component_address: None,
             analog_type: None,
-            analog_address: None,
             value: None,
         }
     }
@@ -404,8 +406,29 @@ impl AnalogValueBuilder {
                 reason: "系统地址必须在 3 字节范围内".to_string(),
             });
         }
-        self.system_address = Some(address);
-        Ok(self)
+        self.system_address = Some(address);        Ok(self)
+    }    /// 设置部件类型
+    /// 
+    /// # Arguments
+    /// * `component_type` - 部件类型
+    /// 
+    /// # Returns
+    /// * `Self` - 构建器实例
+    pub fn component_type(mut self, component_type: ComponentType) -> Self {
+        self.component_type = Some(component_type);
+        self
+    }
+
+    /// 设置部件地址
+    /// 
+    /// # Arguments
+    /// * `address` - 部件地址（4字节）
+    /// 
+    /// # Returns
+    /// * `Self` - 构建器实例
+    pub fn component_address(mut self, address: u32) -> Self {
+        self.component_address = Some(address);
+        self
     }
 
     /// 设置模拟量类型
@@ -418,21 +441,7 @@ impl AnalogValueBuilder {
     pub fn analog_type(mut self, analog_type: AnalogType) -> Self {
         self.analog_type = Some(analog_type);
         self
-    }
-
-    /// 设置模拟量地址
-    /// 
-    /// # Arguments
-    /// * `address` - 模拟量地址（4字节）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn analog_address(mut self, address: u32) -> Self {
-        self.analog_address = Some(address);
-        self
-    }
-
-    /// 设置模拟量值
+    }    /// 设置模拟量值
     /// 
     /// # Arguments
     /// * `value` - 模拟量值
@@ -449,9 +458,7 @@ impl AnalogValueBuilder {
         }
         self.value = Some(value);
         Ok(self)
-    }
-
-    /// 设置为温度类型
+    }    /// 设置为温度类型
     /// 
     /// # Returns
     /// * `Self` - 构建器实例
@@ -459,32 +466,32 @@ impl AnalogValueBuilder {
         self.analog_type(AnalogType::Temperature)
     }
 
-    /// 设置为湿度类型
+    /// 设置为压力类型（MPa）
     /// 
     /// # Returns
     /// * `Self` - 构建器实例
-    pub fn humidity(self) -> Self {
-        self.analog_type(AnalogType::Humidity)
+    pub fn pressure_mpa(self) -> Self {
+        self.analog_type(AnalogType::PressureMPa)
     }
 
-    /// 设置为压力类型
+    /// 设置为压力类型（kPa）
     /// 
     /// # Returns
     /// * `Self` - 构建器实例
-    pub fn pressure(self) -> Self {
-        self.analog_type(AnalogType::Pressure)
+    pub fn pressure_kpa(self) -> Self {
+        self.analog_type(AnalogType::PressureKPa)
     }
 }
 
 impl Builder<AnalogValue> for AnalogValueBuilder {
-    fn build(self) -> EncodeResult<AnalogValue> {
-        self.validate()?;
+    fn build(self) -> EncodeResult<AnalogValue> {        self.validate()?;
         AnalogValue::new(
             self.system_type.unwrap(),
-            self.system_address.unwrap(),
+            self.system_address.unwrap() as u8,
+            self.component_type.unwrap(),
+            self.component_address.unwrap(),
             self.analog_type.unwrap(),
-            self.analog_address.unwrap(),
-            self.value.unwrap(),
+            self.value.unwrap() as i16,
         )
     }
 
@@ -503,9 +510,7 @@ impl Builder<AnalogValue> for AnalogValueBuilder {
                 value: "None".to_string(),
                 reason: "系统地址不能为空".to_string(),
             });
-        }
-
-        if self.analog_type.is_none() {
+        }        if self.analog_type.is_none() {
             return Err(EncodeError::InvalidValue {
                 field: "analog_type".to_string(),
                 value: "None".to_string(),
@@ -513,11 +518,19 @@ impl Builder<AnalogValue> for AnalogValueBuilder {
             });
         }
 
-        if self.analog_address.is_none() {
+        if self.component_type.is_none() {
             return Err(EncodeError::InvalidValue {
-                field: "analog_address".to_string(),
+                field: "component_type".to_string(),
                 value: "None".to_string(),
-                reason: "模拟量地址不能为空".to_string(),
+                reason: "部件类型不能为空".to_string(),
+            });
+        }
+
+        if self.component_address.is_none() {
+            return Err(EncodeError::InvalidValue {
+                field: "component_address".to_string(),
+                value: "None".to_string(),
+                reason: "部件地址不能为空".to_string(),
             });
         }
 
@@ -533,12 +546,12 @@ impl Builder<AnalogValue> for AnalogValueBuilder {
     }
 }
 
-impl ResettableBuilder<AnalogValue> for AnalogValueBuilder {
-    fn reset(&mut self) {
+impl ResettableBuilder<AnalogValue> for AnalogValueBuilder {    fn reset(&mut self) {
         self.system_type = None;
         self.system_address = None;
+        self.component_type = None;
+        self.component_address = None;
         self.analog_type = None;
-        self.analog_address = None;
         self.value = None;
     }
 }
@@ -640,27 +653,25 @@ mod tests {
             .alarm_status()
             .description_str("烟雾探测器").unwrap()
             .build()
-            .unwrap();
-
-        assert_eq!(status.system_type, SystemType::FireAlarm);
-        assert_eq!(status.component_type, ComponentType::SmokeDetector);
+            .unwrap();        assert_eq!(status.system_type, SystemType::FireAlarm);
+        assert_eq!(status.component_type, ComponentType::SmokeFireDetector);
         assert_eq!(status.status, 0x01);
-    }
-
-    #[test]
+    }    #[test]
     fn test_analog_value_builder() {
         let value = AnalogValueBuilder::new()
             .system_type(SystemType::AutoSprinkler)
             .system_address(0x123456).unwrap()
+            .component_type(ComponentType::SmokeFireDetector)
+            .component_address(0x87654321)
             .temperature()
-            .analog_address(0x87654321)
             .value(25.5).unwrap()
             .build()
             .unwrap();
 
         assert_eq!(value.system_type, SystemType::AutoSprinkler);
+        assert_eq!(value.component_type, ComponentType::SmokeFireDetector);
         assert_eq!(value.analog_type, AnalogType::Temperature);
-        assert!((value.value - 25.5).abs() < f32::EPSILON);
+        assert_eq!(value.value, 26); // i16 值，因为25.5会被转换为26
     }
 
     #[test]
