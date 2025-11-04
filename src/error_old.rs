@@ -6,21 +6,27 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ParseError {
     /// 地址错误
-    #[error("Address error: {0} - {1}")]
-    ValidAddress(u64, String),    
+    #[error("Address error: {0} - {1}")]    ValidAddress(u64, String),    
     
     /// 数据包太短  
-    #[error("Packet too short: got {actual} bytes, need at least {expected}")]
+    #[error("Packet too short: got {got} bytes, need at least {need}")]
     TooShort { 
+        /// 实际获得的字节数
+        got: usize, 
+        /// 需要的字节数
+        need: usize 
+    },    /// 数据不足
+    #[error("Insufficient data: expected {expected} bytes, got {actual}")]
+    InsufficientData { 
         /// 期望的字节数
         expected: usize, 
         /// 实际获得的字节数
         actual: usize 
     },
 
-    /// 数据不足
-    #[error("Insufficient data: expected {expected} bytes, got {actual}")]
-    InsufficientData { 
+    /// 数据太短 (现代化版本)
+    #[error("Data too short: expected {expected} bytes, got {actual}")]
+    TooShort { 
         /// 期望的字节数
         expected: usize, 
         /// 实际获得的字节数
@@ -41,9 +47,7 @@ pub enum ParseError {
 
     /// 无效的启动符
     #[error("Invalid start marker: expected [64, 64], got [{0}, {1}]")]
-    InvalidStartMarker(u8, u8),
-
-    /// 无效的帧开始
+    InvalidStartMarker(u8, u8),    /// 无效的帧开始
     #[error("Invalid frame start: expected {expected:?}, got {found:?}")]
     InvalidFrameStart { 
         /// 期望的字节序列
@@ -54,9 +58,7 @@ pub enum ParseError {
 
     /// 无效的结束符
     #[error("Invalid end marker: expected [35, 35], got [{0}, {1}]")]
-    InvalidEndMarker(u8, u8),
-
-    /// 无效的帧结束
+    InvalidEndMarker(u8, u8),    /// 无效的帧结束
     #[error("Invalid frame end: expected {expected:?}, got {found:?}")]
     InvalidFrameEnd { 
         /// 期望的字节序列
@@ -67,9 +69,7 @@ pub enum ParseError {
 
     /// 校验和错误
     #[error("Checksum error")]
-    Checksum,
-
-    /// 校验和不匹配
+    Checksum,    /// 校验和不匹配
     #[error("Checksum mismatch: expected {expected}, got {actual}")]
     ChecksumMismatch { 
         /// 期望的校验和
@@ -94,9 +94,7 @@ pub enum ParseError {
         expected: usize, 
         /// 实际的长度
         actual: usize 
-    },
-
-    /// 无效的数据长度
+    },    /// 无效的数据长度
     #[error("Invalid data length: {actual} (expected: {expected})")]
     InvalidDataLength { 
         /// 实际长度
@@ -141,9 +139,7 @@ pub enum ParseError {
 
     /// 字符串编码错误
     #[error("String encoding error: {0}")]
-    StringEncoding(String),
-
-    /// 反序列化错误
+    StringEncoding(String),    /// 反序列化错误
     #[error("Deserialization error: {message}")]
     DeserializationError { 
         /// 错误消息

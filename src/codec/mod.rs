@@ -2,7 +2,7 @@
 //!
 //! 提供数据包和数据单元的编解码功能，支持 TCP 流处理和异步操作
 
-use crate::error::{ParseError, ParseResult, EncodeResult, EncodeError};
+use crate::error::{ParseError, ParseResult, EncodeResult};
 use crate::frame::Packet;
 use crate::data_unit::GenericDataUnit;
 use crate::protocol::DataUnitType;

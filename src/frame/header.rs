@@ -67,10 +67,9 @@ impl ControlUnit {
 
     /// 从字节数组解析控制单元
     pub fn from_bytes(bytes: &[u8]) -> ParseResult<Self> {
-        if bytes.len() < 25 {
-            return Err(ParseError::TooShort {
-                got: bytes.len(),
-                need: 25,
+        if bytes.len() < 25 {            return Err(ParseError::TooShort {
+                actual: bytes.len(),
+                expected: 25,
             });
         }
 

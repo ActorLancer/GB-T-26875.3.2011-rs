@@ -26,7 +26,10 @@ pub use crate::builder::data_unit::{SystemStatusBuilder, ComponentStatusBuilder,
 
 // 数据单元
 pub use crate::data_unit::{DataUnit, GenericDataUnit};
-pub use crate::data_unit::standard::{SystemStatus, ComponentStatus, AnalogValue};
+pub use crate::data_unit::standard::{SystemStatus as DataSystemStatus, ComponentStatus as DataComponentStatus, AnalogValue as DataAnalogValue};
+
+// 信息对象
+pub use crate::info_object::{InfoObject, SystemStatus, ComponentStatus, AnalogValue, AnalogType as InfoAnalogType};
 
 // 扩展机制
 pub use crate::extension::{ExtensionDataUnit, ExtensionManager, ExtensionRegistry};

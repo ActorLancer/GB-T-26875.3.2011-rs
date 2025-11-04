@@ -269,8 +269,8 @@ impl Packet {
         const MIN_PACKET_SIZE: usize = 30;
         if data.len() < MIN_PACKET_SIZE {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: MIN_PACKET_SIZE,
+                actual: data.len(),
+                expected: MIN_PACKET_SIZE,
             });
         }
 
@@ -292,8 +292,8 @@ impl Packet {
             // 检查是否有足够的数据
             if cursor + data_unit_len + 3 > data.len() { // +3 for checksum(1) + end_marker(2)
                 return Err(ParseError::TooShort {
-                    got: data.len(),
-                    need: cursor + data_unit_len + 3,
+                    actual: data.len(),
+                    expected: cursor + data_unit_len + 3,
                 });
             }
 
@@ -332,8 +332,8 @@ impl Packet {
         // 验证结束符
         if cursor + FRAME_END.len() > data.len() {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: cursor + FRAME_END.len(),
+                actual: data.len(),
+                expected: cursor + FRAME_END.len(),
             });
         }
 
@@ -370,8 +370,8 @@ impl Packet {
         const MIN_PACKET_SIZE: usize = 30;
         if data.len() < MIN_PACKET_SIZE {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: MIN_PACKET_SIZE,
+                actual: data.len(),
+                expected: MIN_PACKET_SIZE,
             });
         }
 
@@ -394,8 +394,8 @@ impl Packet {
         // 检查是否有足够的数据
         if data.len() < expected_total_len {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: expected_total_len,
+                actual: data.len(),
+                expected: expected_total_len,
             });
         }
 
@@ -436,8 +436,8 @@ impl Packet {
         // 验证结束符
         if cursor + FRAME_END.len() > data.len() {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: cursor + FRAME_END.len(),
+                actual: data.len(),
+                expected: cursor + FRAME_END.len(),
             });
         }
 

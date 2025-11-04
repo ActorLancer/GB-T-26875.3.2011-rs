@@ -214,8 +214,8 @@ impl DataValidator {
         // 检查最小长度
         if data.len() < MIN_PACKET_SIZE {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: MIN_PACKET_SIZE,
+                actual: data.len(),
+                expected: MIN_PACKET_SIZE,
             });
         }
 
@@ -267,16 +267,16 @@ impl DataValidator {
     pub fn validate_checksum(&self, data: &[u8]) -> ParseResult<()> {
         if data.len() < 4 {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: 4,
+                actual: data.len(),
+                expected: 4,
             });
         }
 
         // 提取校验和（倒数第一个字节，在结束符之前）
         if data.len() < 3 {
             return Err(ParseError::TooShort {
-                got: data.len(),
-                need: 3,
+                actual: data.len(),
+                expected: 3,
             });
         }
 

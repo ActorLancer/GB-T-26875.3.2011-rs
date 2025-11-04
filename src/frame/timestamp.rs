@@ -75,10 +75,9 @@ impl Timestamp {
 
     /// 从字节数组解析时间标签
     pub fn from_bytes(bytes: &[u8]) -> ParseResult<Self> {
-        if bytes.len() < 6 {
-            return Err(ParseError::TooShort {
-                got: bytes.len(),
-                need: 6,
+        if bytes.len() < 6 {            return Err(ParseError::TooShort {
+                actual: bytes.len(),
+                expected: 6,
             });
         }
 
