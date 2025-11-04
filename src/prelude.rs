@@ -17,8 +17,8 @@ pub use crate::protocol::{Command, SystemType, ComponentType, AnalogType, DataUn
 pub use crate::frame::{ControlUnit, Timestamp};
 
 // 编解码
-pub use crate::codec::{Codec, PacketCodec, DataUnitCodec, StreamCodec};
-pub use crate::parser::{PacketParser, FrameDetector};
+pub use crate::codec::{Codec, PacketCodec, DataUnitCodec, StreamCodec, CodecBuilder};
+pub use crate::parser::{PacketParser, FrameDetector, DataValidator};
 
 // 构建器
 pub use crate::builder::packet::PacketBuilder;

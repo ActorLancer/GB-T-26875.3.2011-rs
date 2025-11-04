@@ -2,11 +2,14 @@
 //!
 //! 提供数据包和数据单元的编解码功能，支持 TCP 流处理和异步操作
 
-use crate::error::{ParseError, ParseResult, EncodeResult};
+use crate::error::{ParseError, ParseResult, EncodeResult, EncodeError};
 use crate::frame::Packet;
 use crate::data_unit::GenericDataUnit;
 use crate::protocol::DataUnitType;
 use bytes::{Bytes, BytesMut, BufMut, Buf};
+
+#[cfg(feature = "async")]
+use tokio_util::codec::{Decoder, Encoder};
 
 /// GB26875 编解码器 trait
 /// 
@@ -233,6 +236,7 @@ impl Default for StreamCodec {
 #[cfg(feature = "async")]
 mod async_codec {
     use super::*;
+    use crate::parser::{FrameDetector, DataValidator};
     use tokio_util::codec::{Decoder, Encoder};
     use bytes::BufMut;
 
@@ -333,6 +337,178 @@ mod async_codec {
             Ok(())
         }
     }
+
+    /// GB26875 协议的 tokio-util Framed 编解码器
+    /// 
+    /// 实现了 tokio-util 的 Decoder 和 Encoder trait，
+    /// 可以与 tokio 的 Framed 一起使用进行异步网络通信
+    #[derive(Debug, Clone)]
+    pub struct FramedCodec {
+        /// 帧检测器
+        detector: FrameDetector,
+        /// 数据验证器
+        validator: DataValidator,
+        /// 数据包编解码器
+        packet_codec: PacketCodec,
+    }
+
+    impl FramedCodec {
+        /// 创建新的 Framed 编解码器
+        pub fn new() -> Self {
+            FramedCodec {
+                detector: FrameDetector::new(),
+                validator: DataValidator::new(),
+                packet_codec: PacketCodec::new(),
+            }
+        }
+
+        /// 创建带初始容量的 Framed 编解码器
+        /// 
+        /// # Arguments
+        /// * `capacity` - 缓冲区初始容量
+        pub fn with_capacity(capacity: usize) -> Self {
+            FramedCodec {
+                detector: FrameDetector::with_capacity(capacity),
+                validator: DataValidator::new(),
+                packet_codec: PacketCodec::new(),
+            }
+        }        /// 启用/禁用数据验证
+        /// 
+        /// # Arguments
+        /// * `_enabled` - 是否启用验证（暂未实现）
+        pub fn set_validation(&mut self, _enabled: bool) {
+            // 在实际实现中，可以添加一个验证开关字段
+        }
+    }
+
+    impl Default for FramedCodec {
+        fn default() -> Self {
+            Self::new()
+        }
+    }    impl Decoder for FramedCodec {
+        type Item = Packet;
+        type Error = ParseError;
+
+        fn decode(&mut self, src: &mut BytesMut) -> Result<Option<Self::Item>, Self::Error> {
+            if src.is_empty() {
+                return Ok(None);
+            }            // 尝试从缓冲区检测完整的帧
+            match self.detector.feed(src.as_ref()) {
+                Ok(Some(frame_data)) => {
+                    // 验证帧的完整性（可选）
+                    if let Err(_e) = self.validator.validate_complete_frame(&frame_data) {
+                        // 记录验证错误但继续解析
+                        #[cfg(feature = "logging")]
+                        log::warn!("Frame validation failed: {}", _e);
+                    }
+
+                    // 解析数据包
+                    match Packet::parse(&frame_data) {
+                        Ok(packet) => {
+                            // 从源缓冲区中移除已处理的数据
+                            let consumed = frame_data.len();
+                            src.advance(consumed);
+                            Ok(Some(packet))
+                        }
+                        Err(e) => Err(e),
+                    }
+                }
+                Ok(None) => {
+                    // 需要更多数据
+                    Ok(None)
+                }
+                Err(e) => Err(e),
+            }
+        }
+    }    impl Encoder<Packet> for FramedCodec {
+        type Error = EncodeError;
+
+        fn encode(&mut self, item: Packet, dst: &mut BytesMut) -> Result<(), Self::Error> {
+            let encoded = self.packet_codec.encode(&item)?;
+            dst.extend_from_slice(&encoded);
+            Ok(())
+        }
+    }
+}
+
+/// 编解码器构建器
+/// 
+/// 用于创建和配置各种编解码器
+#[derive(Debug, Clone, Default)]
+pub struct CodecBuilder {
+    /// 缓冲区容量
+    capacity: Option<usize>,
+    /// 是否启用验证
+    validation_enabled: bool,
+    /// 是否启用压缩
+    compression_enabled: bool,
+}
+
+impl CodecBuilder {
+    /// 创建新的编解码器构建器
+    pub fn new() -> Self {
+        CodecBuilder {
+            capacity: None,
+            validation_enabled: true,
+            compression_enabled: false,
+        }
+    }
+
+    /// 设置缓冲区容量
+    /// 
+    /// # Arguments
+    /// * `capacity` - 缓冲区容量
+    pub fn with_capacity(mut self, capacity: usize) -> Self {
+        self.capacity = Some(capacity);
+        self
+    }
+
+    /// 启用/禁用数据验证
+    /// 
+    /// # Arguments
+    /// * `enabled` - 是否启用验证
+    pub fn with_validation(mut self, enabled: bool) -> Self {
+        self.validation_enabled = enabled;
+        self
+    }
+
+    /// 启用/禁用压缩
+    /// 
+    /// # Arguments
+    /// * `enabled` - 是否启用压缩
+    pub fn with_compression(mut self, enabled: bool) -> Self {
+        self.compression_enabled = enabled;
+        self
+    }
+
+    /// 构建数据包编解码器
+    pub fn build_packet_codec(self) -> PacketCodec {
+        PacketCodec::new()
+    }
+
+    /// 构建数据单元编解码器
+    pub fn build_data_unit_codec(self) -> DataUnitCodec {
+        DataUnitCodec::new()
+    }
+
+    /// 构建流式编解码器
+    pub fn build_stream_codec(self) -> StreamCodec {
+        if let Some(capacity) = self.capacity {
+            StreamCodec::with_capacity(capacity)
+        } else {
+            StreamCodec::new()
+        }
+    }
+
+    /// 构建 Framed 编解码器
+    #[cfg(feature = "async")]
+    pub fn build_framed_codec(self) -> FramedCodec {
+        if let Some(capacity) = self.capacity {
+            FramedCodec::with_capacity(capacity)
+        } else {
+            FramedCodec::new()
+        }
+    }
 }
 
 #[cfg(feature = "async")]
@@ -427,5 +603,59 @@ mod tests {
         
         // 缓冲区应该为空
         assert!(!codec.has_pending_data());
+    }    #[test]
+    fn test_codec_builder() {
+        let builder = CodecBuilder::new()
+            .with_capacity(4096)
+            .with_validation(true);
+
+        let _packet_codec = builder.clone().build_packet_codec();
+        let _data_unit_codec = builder.clone().build_data_unit_codec();
+        let stream_codec = builder.clone().build_stream_codec();
+
+        // 确保编解码器被正确创建
+        assert_eq!(stream_codec.buffer_len(), 0);
+    }
+
+    #[cfg(feature = "async")]
+    #[test]
+    fn test_framed_codec_creation() {
+        let codec = FramedCodec::new();
+        let _default_codec = FramedCodec::default();
+        let _capacity_codec = FramedCodec::with_capacity(8192);
+        
+        // 测试编解码器构建器
+        let builder_codec = CodecBuilder::new()
+            .with_capacity(2048)
+            .build_framed_codec();
+    }
+
+    #[cfg(feature = "async")]
+    #[tokio::test]
+    async fn test_framed_encoder() {
+        use tokio_util::codec::Encoder;
+        use crate::frame::{ControlUnit, Timestamp};
+        use crate::protocol::{Command, ProtocolVersion};
+        
+        let mut codec = FramedCodec::new();
+        let mut buf = BytesMut::new();
+        
+        // 创建测试数据包
+        let control_unit = ControlUnit::new(
+            1,
+            ProtocolVersion::new(1, 0),
+            Timestamp::now(),
+            0x123456,
+            0x654321,
+            0,
+            Command::SendData,
+        ).unwrap();
+        
+        let packet = Packet::empty(control_unit);
+        
+        // 测试编码
+        let result = codec.encode(packet, &mut buf);
+        assert!(result.is_ok());
+        assert!(!buf.is_empty());
     }
 }
