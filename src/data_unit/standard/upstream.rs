@@ -5,7 +5,7 @@
 
 use crate::error::{ParseError, ParseResult, EncodeResult};
 use crate::data_unit::DataUnit;
-use crate::protocol::{DataUnitType, SystemType};
+use crate::protocol::DataUnitType;
 use crate::info_object::{SystemStatus as InfoSystemStatus, InfoObject};
 use crate::frame::Timestamp;
 use bytes::{Bytes, BufMut, BytesMut};
@@ -1395,7 +1395,9 @@ impl DataUnit for UploadDeviceTime {
 
 #[cfg(test)]
 mod tests {
-    use super::*;    #[test]
+    use super::*;
+    use crate::protocol::types::SystemType;
+    #[test]
     fn test_upload_system_status_basic() {
         // 基本功能测试，先验证数据单元类型
         let system_status = InfoSystemStatus::new(

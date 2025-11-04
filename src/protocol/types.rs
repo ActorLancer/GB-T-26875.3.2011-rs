@@ -683,11 +683,15 @@ pub enum DataUnitType {
     /// 同步用户信息传输装置时钟
     SyncDeviceClock = 90,
     /// 查岗命令
-    PatrolCommand = 91,
+    PatrolCommand = 91,    
     /// 预留 (92-127)
     StandardReserved(u8),
     /// 用户自定义 (128-254)
     UserDefined(u8),
+    /// 自定义类型（用于兼容）
+    Custom(u8),
+    /// 未知类型
+    Unknown(u8),
 }
 
 impl DataUnitType {
@@ -731,8 +735,7 @@ impl DataUnitType {
             88 => Self::ReadDeviceTime,
             89 => Self::InitializeDevice,
             90 => Self::SyncDeviceClock,
-            91 => Self::PatrolCommand,
-            92..=127 => Self::StandardReserved(value),
+            91 => Self::PatrolCommand,            92..=127 => Self::StandardReserved(value),
             128..=254 => Self::UserDefined(value),
             255 => Self::StandardReserved(value), // 255 不在用户自定义范围内
         }
@@ -781,6 +784,8 @@ impl DataUnitType {
             Self::PatrolCommand => 91,
             Self::StandardReserved(v) => v,
             Self::UserDefined(v) => v,
+            Self::Custom(v) => v,
+            Self::Unknown(v) => v,
         }
     }
 
@@ -840,6 +845,8 @@ impl DataUnitType {
             Self::PatrolCommand => "查岗命令",
             Self::StandardReserved(_) => "预留",
             Self::UserDefined(_) => "用户自定义",
+            Self::Custom(_) => "自定义类型",
+            Self::Unknown(_) => "未知类型",
         }
     }
 }

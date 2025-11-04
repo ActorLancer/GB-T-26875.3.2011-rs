@@ -146,13 +146,17 @@ pub enum ParseError {
     /// 反序列化错误
     #[error("Deserialization error: {message}")]
     DeserializationError { 
-        /// 错误消息
+        /// 错误消息        
         message: String 
     },
 
     /// IO错误（用于async支持）
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// 自定义错误（用于扩展）
+    #[error("Custom error: {0}")]
+    Custom(String),
 }
 
 /// 编码错误

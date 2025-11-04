@@ -457,17 +457,21 @@ mod tests {
         let test_data = [0x12, 0x34, 0x56, 0x78];
         let parsed = ExtensionManager::parse_global(200, &test_data).unwrap();
         assert_eq!(parsed.type_id(), 200);
-    }
-
-    #[test]
+    }    #[test]
     fn test_parse_with_extensions() {
         // 测试标准类型解析
         let standard_type = DataUnitType::UploadSystemStatus;
-        let standard_data = [0x01, 0x12, 0x34, 0x56]; // 系统状态数据
+        // UploadSystemStatus需要17字节: 1(对象数量) + 10(系统状态信息体) + 6(时间戳)
+        let standard_data = [
+            0x01, // 对象数量
+            0x01, 0x01, 0x02, 0x00, // 系统状态信息体 (4字节)
+            0x30, 0x15, 0x04, 0x1A, 0x0B, 0x18, // 系统状态时间戳 (6字节)
+            0x2D, 0x1E, 0x0F, 0x04, 0x0B, 0x18, // 数据单元时间戳 (6字节)
+        ];
         let result = parse_with_extensions(standard_type, &standard_data);
         
         match result {
-            GenericDataUnit::SystemStatus(_) => {} // 期望的结果
+            GenericDataUnit::UploadSystemStatus(_) => {} // 期望的结果
             _ => panic!("期望解析为系统状态"),
         }
 

@@ -1,699 +1,535 @@
 //! GB26875 数据单元构建器
 //!
-//! 提供友好的数据单元构建 API
+//! 提供友好的数据单元构建 API，支持链式调用和类型安全的构建过程。
+//!
+//! ## 示例
+//!
+//! ```rust
+//! use gb26875::builder::data_unit::DataUnitBuilder;
+//! use gb26875::protocol::types::{SystemType, ComponentType, DataUnitType};
+//! use gb26875::frame::Timestamp;
+//!
+//! // 构建上传系统状态数据单元
+//! let data_unit = DataUnitBuilder::new(DataUnitType::UploadSystemStatus)
+//!     .system_status()
+//!     .system_type(SystemType::FireAlarm)
+//!     .system_address(1)
+//!     .system_state(0x0002)
+//!     .timestamp(Timestamp::now())
+//!     .build()?;
+//!
+//! // 构建上传部件状态数据单元
+//! let data_unit = DataUnitBuilder::new(DataUnitType::UploadComponentStatus)
+//!     .component_status()
+//!     .system_type(SystemType::FireAlarm)
+//!     .system_address(1)
+//!     .component_type(ComponentType::SmokeFireDetector)
+//!     .component_address(0x12345678)
+//!     .component_state(0x0002)
+//!     .description("一层大厅烟雾探测器")
+//!     .timestamp(Timestamp::now())
+//!     .build()?;
+//! ```
 
-use crate::builder::{Builder, ResettableBuilder};
-use crate::error::{EncodeError, EncodeResult};
-use crate::data_unit::standard::*;
-use crate::protocol::{SystemType, ComponentType, AnalogType};
+use crate::error::{ParseResult, ParseError};
+use crate::data_unit::GenericDataUnit;
+use crate::data_unit::standard::upstream;
+use crate::info_object::{
+    SystemStatus as InfoSystemStatus,
+    ComponentStatus as InfoComponentStatus, 
+    AnalogValue as InfoAnalogValue,
+    analog_value::AnalogType,
+};
+use crate::frame::Timestamp;
+use crate::protocol::types::{SystemType, ComponentType, DataUnitType};
+
+/// 数据单元构建器入口
+pub struct DataUnitBuilder {
+    data_unit_type: DataUnitType,
+}
+
+impl DataUnitBuilder {
+    /// 创建新的数据单元构建器
+    pub fn new(data_unit_type: DataUnitType) -> Self {
+        Self { data_unit_type }
+    }
+
+    /// 开始构建系统状态数据单元
+    pub fn system_status(self) -> SystemStatusBuilder {
+        SystemStatusBuilder::new(self.data_unit_type)
+    }
+
+    /// 开始构建部件状态数据单元
+    pub fn component_status(self) -> ComponentStatusBuilder {
+        ComponentStatusBuilder::new(self.data_unit_type)
+    }
+
+    /// 开始构建模拟量值数据单元
+    pub fn analog_value(self) -> AnalogValueBuilder {
+        AnalogValueBuilder::new(self.data_unit_type)
+    }
+
+    /// 开始构建操作信息数据单元
+    pub fn operation_info(self) -> OperationInfoBuilder {
+        OperationInfoBuilder::new(self.data_unit_type)
+    }
+
+    /// 开始构建版本信息数据单元
+    pub fn version_info(self) -> VersionInfoBuilder {
+        VersionInfoBuilder::new(self.data_unit_type)
+    }
+
+    /// 开始构建配置信息数据单元
+    pub fn config_info(self) -> ConfigInfoBuilder {
+        ConfigInfoBuilder::new(self.data_unit_type)
+    }
+
+    /// 开始构建时间信息数据单元
+    pub fn time_info(self) -> TimeInfoBuilder {
+        TimeInfoBuilder::new(self.data_unit_type)
+    }
+}
 
 /// 系统状态构建器
-#[derive(Debug, Clone, Default)]
 pub struct SystemStatusBuilder {
+    data_unit_type: DataUnitType,
     system_type: Option<SystemType>,
-    system_address: Option<u32>,
+    system_address: Option<u8>,
+    system_state: Option<u16>,
+    timestamp: Option<Timestamp>,
 }
 
 impl SystemStatusBuilder {
-    /// 创建新的系统状态构建器
-    pub fn new() -> Self {
-        SystemStatusBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self {
+            data_unit_type,
             system_type: None,
             system_address: None,
+            system_state: None,
+            timestamp: None,
         }
     }
 
     /// 设置系统类型
-    /// 
-    /// # Arguments
-    /// * `system_type` - 系统类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn system_type(mut self, system_type: SystemType) -> Self {
         self.system_type = Some(system_type);
         self
     }
 
     /// 设置系统地址
-    /// 
-    /// # Arguments
-    /// * `address` - 系统地址（3字节）
-    /// 
-    /// # Returns
-    /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn system_address(mut self, address: u32) -> EncodeResult<Self> {
-        if address > 0xFFFFFF {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: format!("0x{:X}", address),
-                reason: "系统地址必须在 3 字节范围内".to_string(),
-            });
-        }
+    pub fn system_address(mut self, address: u8) -> Self {
         self.system_address = Some(address);
-        Ok(self)
+        self
     }
 
-    /// 使用火灾报警系统类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn fire_alarm_system(self) -> Self {
-        self.system_type(SystemType::FireAlarm)
+    /// 设置系统状态
+    pub fn system_state(mut self, state: u16) -> Self {
+        self.system_state = Some(state);
+        self
     }
 
-    /// 使用自动喷水灭火系统类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn auto_sprinkler_system(self) -> Self {
-        self.system_type(SystemType::AutoSprinkler)
-    }
-}
-
-impl Builder<SystemStatus> for SystemStatusBuilder {
-    fn build(self) -> EncodeResult<SystemStatus> {
-        self.validate()?;
-        SystemStatus::new(self.system_type.unwrap(), self.system_address.unwrap())
+    /// 设置时间戳
+    pub fn timestamp(mut self, timestamp: Timestamp) -> Self {
+        self.timestamp = Some(timestamp);
+        self
     }
 
-    fn validate(&self) -> EncodeResult<()> {
-        if self.system_type.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "system_type".to_string(),
-                value: "None".to_string(),
-                reason: "系统类型不能为空".to_string(),
-            });
+    /// 构建数据单元
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        let system_type = self.system_type.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_type".to_string(),
+            value: "None".to_string(),
+            reason: "System type is required".to_string(),
+        })?;
+
+        let system_address = self.system_address.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_address".to_string(),
+            value: "None".to_string(),
+            reason: "System address is required".to_string(),
+        })?;
+
+        let system_state = self.system_state.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_state".to_string(),
+            value: "None".to_string(),
+            reason: "System state is required".to_string(),
+        })?;
+
+        let timestamp = self.timestamp.ok_or_else(|| ParseError::InvalidValue {
+            field: "timestamp".to_string(),
+            value: "None".to_string(),
+            reason: "Timestamp is required".to_string(),
+        })?;        let system_status = InfoSystemStatus::new(
+            system_type,
+            system_address,
+            system_state,
+            timestamp,
+        );
+
+        match self.data_unit_type {
+            DataUnitType::UploadSystemStatus => {
+                Ok(GenericDataUnit::UploadSystemStatus(
+                    upstream::UploadSystemStatus::new(system_status, timestamp)
+                ))
+            }
+            _ => Err(ParseError::InvalidValue {
+                field: "data_unit_type".to_string(),
+                value: format!("{:?}", self.data_unit_type),
+                reason: "Incompatible data unit type for system status".to_string(),
+            }),
         }
-
-        if self.system_address.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: "None".to_string(),
-                reason: "系统地址不能为空".to_string(),
-            });
-        }
-
-        Ok(())
-    }
-}
-
-impl ResettableBuilder<SystemStatus> for SystemStatusBuilder {
-    fn reset(&mut self) {
-        self.system_type = None;
-        self.system_address = None;
     }
 }
 
 /// 部件状态构建器
-#[derive(Debug, Clone, Default)]
 pub struct ComponentStatusBuilder {
+    data_unit_type: DataUnitType,
     system_type: Option<SystemType>,
-    system_address: Option<u8>, // 改为u8
+    system_address: Option<u8>,
     component_type: Option<ComponentType>,
     component_address: Option<u32>,
-    status: Option<u16>, // 改为u16
-    description: Option<Vec<u8>>,
+    component_state: Option<u16>,
+    component_description: [u8; 31],
+    timestamp: Option<Timestamp>,
 }
 
 impl ComponentStatusBuilder {
-    /// 创建新的部件状态构建器
-    pub fn new() -> Self {
-        ComponentStatusBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self {
+            data_unit_type,
             system_type: None,
             system_address: None,
             component_type: None,
             component_address: None,
-            status: None,
-            description: None,
+            component_state: None,
+            component_description: [0u8; 31],
+            timestamp: None,
         }
     }
 
     /// 设置系统类型
-    /// 
-    /// # Arguments
-    /// * `system_type` - 系统类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn system_type(mut self, system_type: SystemType) -> Self {
         self.system_type = Some(system_type);
         self
     }
 
     /// 设置系统地址
-    /// 
-    /// # Arguments
-    /// * `address` - 系统地址（1字节）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn system_address(mut self, address: u8) -> Self {
         self.system_address = Some(address);
         self
     }
 
     /// 设置部件类型
-    /// 
-    /// # Arguments
-    /// * `component_type` - 部件类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn component_type(mut self, component_type: ComponentType) -> Self {
         self.component_type = Some(component_type);
         self
     }
 
     /// 设置部件地址
-    /// 
-    /// # Arguments
-    /// * `address` - 部件地址（4字节）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn component_address(mut self, address: u32) -> Self {
         self.component_address = Some(address);
         self
     }
 
     /// 设置部件状态
-    /// 
-    /// # Arguments
-    /// * `status` - 部件状态（2字节）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn status(mut self, status: u16) -> Self {
-        self.status = Some(status);
+    pub fn component_state(mut self, state: u16) -> Self {
+        self.component_state = Some(state);
         self
     }
 
-    /// 设置部件描述（字符串）
-    /// 
-    /// # Arguments
-    /// * `description` - 部件描述字符串
-    /// 
-    /// # Returns
-    /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn description_str(mut self, description: &str) -> EncodeResult<Self> {
-        #[cfg(feature = "encoding")]
-        let encoded = {
-            use encoding_rs::GB18030;
-            let (encoded, _, _) = GB18030.encode(description);
-            encoded.into_owned()
-        };
-        
-        #[cfg(not(feature = "encoding"))]
-        let encoded = description.as_bytes().to_vec();
+    /// 设置部件描述文本
+    pub fn description(mut self, text: &str) -> Self {
+        let bytes = text.as_bytes();
+        let copy_len = bytes.len().min(31);
+        self.component_description[..copy_len].copy_from_slice(&bytes[..copy_len]);
+        self
+    }
 
-        if encoded.len() > 31 {
-            return Err(EncodeError::InvalidValue {
-                field: "description".to_string(),
-                value: format!("{} bytes", encoded.len()),
-                reason: "部件描述长度不能超过 31 字节".to_string(),
-            });
+    /// 设置部件描述字节数组
+    pub fn description_bytes(mut self, desc: [u8; 31]) -> Self {
+        self.component_description = desc;
+        self
+    }
+
+    /// 设置时间戳
+    pub fn timestamp(mut self, timestamp: Timestamp) -> Self {
+        self.timestamp = Some(timestamp);
+        self
+    }
+
+    /// 构建数据单元
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        let system_type = self.system_type.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_type".to_string(),
+            value: "None".to_string(),
+            reason: "System type is required".to_string(),
+        })?;
+
+        let system_address = self.system_address.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_address".to_string(),
+            value: "None".to_string(),
+            reason: "System address is required".to_string(),
+        })?;
+
+        let component_type = self.component_type.ok_or_else(|| ParseError::InvalidValue {
+            field: "component_type".to_string(),
+            value: "None".to_string(),
+            reason: "Component type is required".to_string(),
+        })?;
+
+        let component_address = self.component_address.ok_or_else(|| ParseError::InvalidValue {
+            field: "component_address".to_string(),
+            value: "None".to_string(),
+            reason: "Component address is required".to_string(),
+        })?;
+
+        let component_state = self.component_state.ok_or_else(|| ParseError::InvalidValue {
+            field: "component_state".to_string(),
+            value: "None".to_string(),
+            reason: "Component state is required".to_string(),
+        })?;
+
+        let timestamp = self.timestamp.ok_or_else(|| ParseError::InvalidValue {
+            field: "timestamp".to_string(),
+            value: "None".to_string(),
+            reason: "Timestamp is required".to_string(),
+        })?;
+
+        let component_status = InfoComponentStatus::new(
+            system_type,
+            system_address,
+            component_type,
+            component_address,
+            component_state,
+            self.component_description,
+            timestamp,
+        );        match self.data_unit_type {
+            DataUnitType::UploadComponentStatus => {
+                Ok(GenericDataUnit::UploadComponentStatus(
+                    upstream::UploadComponentStatus::new(component_status, timestamp)
+                ))
+            }
+            _ => Err(ParseError::InvalidValue {
+                field: "data_unit_type".to_string(),
+                value: format!("{:?}", self.data_unit_type),
+                reason: "Incompatible data unit type for component status".to_string(),
+            }),
         }
-
-        self.description = Some(encoded);
-        Ok(self)
-    }
-
-    /// 设置部件描述（原始字节）
-    /// 
-    /// # Arguments
-    /// * `description` - 部件描述字节数据
-    /// 
-    /// # Returns
-    /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn description_bytes(mut self, description: Vec<u8>) -> EncodeResult<Self> {
-        if description.len() > 31 {
-            return Err(EncodeError::InvalidValue {
-                field: "description".to_string(),
-                value: format!("{} bytes", description.len()),
-                reason: "部件描述长度不能超过 31 字节".to_string(),
-            });
-        }
-        self.description = Some(description);
-        Ok(self)
-    }
-
-    /// 设置为正常状态
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn normal_status(self) -> Self {
-        self.status(0x00)
-    }
-
-    /// 设置为报警状态
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn alarm_status(self) -> Self {
-        self.status(0x01)
-    }
-
-    /// 设置为故障状态
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn fault_status(self) -> Self {
-        self.status(0x02)
-    }
-
-    /// 设置为烟雾探测器类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn smoke_detector(self) -> Self {
-        self.component_type(ComponentType::SmokeFireDetector)
-    }
-
-    /// 设置为温度探测器类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn temperature_detector(self) -> Self {
-        self.component_type(ComponentType::TemperatureFireDetector)
-    }
-}
-
-impl Builder<ComponentStatus> for ComponentStatusBuilder {
-    fn build(self) -> EncodeResult<ComponentStatus> {
-        self.validate()?;
-        ComponentStatus::new(
-            self.system_type.unwrap(),
-            self.system_address.unwrap(),
-            self.component_type.unwrap(),
-            self.component_address.unwrap(),
-            self.status.unwrap(),
-            self.description.unwrap_or_default(),
-        )
-    }
-
-    fn validate(&self) -> EncodeResult<()> {
-        if self.system_type.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "system_type".to_string(),
-                value: "None".to_string(),
-                reason: "系统类型不能为空".to_string(),
-            });
-        }
-
-        if self.system_address.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: "None".to_string(),
-                reason: "系统地址不能为空".to_string(),
-            });
-        }
-
-        if self.component_type.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "component_type".to_string(),
-                value: "None".to_string(),
-                reason: "部件类型不能为空".to_string(),
-            });
-        }
-
-        if self.component_address.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "component_address".to_string(),
-                value: "None".to_string(),
-                reason: "部件地址不能为空".to_string(),
-            });
-        }
-
-        if self.status.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "status".to_string(),
-                value: "None".to_string(),
-                reason: "部件状态不能为空".to_string(),
-            });
-        }
-
-        Ok(())
-    }
-}
-
-impl ResettableBuilder<ComponentStatus> for ComponentStatusBuilder {
-    fn reset(&mut self) {
-        self.system_type = None;
-        self.system_address = None;
-        self.component_type = None;
-        self.component_address = None;
-        self.status = None;
-        self.description = None;
     }
 }
 
 /// 模拟量值构建器
-#[derive(Debug, Clone, Default)]
 pub struct AnalogValueBuilder {
+    data_unit_type: DataUnitType,
     system_type: Option<SystemType>,
-    system_address: Option<u32>,
+    system_address: Option<u8>,
     component_type: Option<ComponentType>,
     component_address: Option<u32>,
     analog_type: Option<AnalogType>,
-    value: Option<f32>,
+    analog_value: Option<i16>,
+    timestamp: Option<Timestamp>,
 }
 
 impl AnalogValueBuilder {
-    /// 创建新的模拟量值构建器
-    pub fn new() -> Self {
-        AnalogValueBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self {
+            data_unit_type,
             system_type: None,
             system_address: None,
             component_type: None,
             component_address: None,
             analog_type: None,
-            value: None,
+            analog_value: None,
+            timestamp: None,
         }
     }
 
     /// 设置系统类型
-    /// 
-    /// # Arguments
-    /// * `system_type` - 系统类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn system_type(mut self, system_type: SystemType) -> Self {
         self.system_type = Some(system_type);
         self
     }
 
     /// 设置系统地址
-    /// 
-    /// # Arguments
-    /// * `address` - 系统地址（3字节）
-    /// 
-    /// # Returns
-    /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn system_address(mut self, address: u32) -> EncodeResult<Self> {
-        if address > 0xFFFFFF {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: format!("0x{:X}", address),
-                reason: "系统地址必须在 3 字节范围内".to_string(),
-            });
-        }
-        self.system_address = Some(address);        Ok(self)
-    }    /// 设置部件类型
-    /// 
-    /// # Arguments
-    /// * `component_type` - 部件类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
+    pub fn system_address(mut self, address: u8) -> Self {
+        self.system_address = Some(address);
+        self
+    }
+
+    /// 设置部件类型
     pub fn component_type(mut self, component_type: ComponentType) -> Self {
         self.component_type = Some(component_type);
         self
     }
 
     /// 设置部件地址
-    /// 
-    /// # Arguments
-    /// * `address` - 部件地址（4字节）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn component_address(mut self, address: u32) -> Self {
         self.component_address = Some(address);
         self
     }
 
     /// 设置模拟量类型
-    /// 
-    /// # Arguments
-    /// * `analog_type` - 模拟量类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
     pub fn analog_type(mut self, analog_type: AnalogType) -> Self {
         self.analog_type = Some(analog_type);
         self
-    }    /// 设置模拟量值
-    /// 
-    /// # Arguments
-    /// * `value` - 模拟量值
-    /// 
-    /// # Returns
-    /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn value(mut self, value: f32) -> EncodeResult<Self> {
-        if !value.is_finite() {
-            return Err(EncodeError::InvalidValue {
-                field: "value".to_string(),
-                value: value.to_string(),
-                reason: "模拟量值必须是有限数值".to_string(),
-            });
+    }
+
+    /// 设置模拟量值
+    pub fn analog_value(mut self, value: i16) -> Self {
+        self.analog_value = Some(value);
+        self
+    }
+
+    /// 设置时间戳
+    pub fn timestamp(mut self, timestamp: Timestamp) -> Self {
+        self.timestamp = Some(timestamp);
+        self
+    }
+
+    /// 构建数据单元
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        let system_type = self.system_type.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_type".to_string(),
+            value: "None".to_string(),
+            reason: "System type is required".to_string(),
+        })?;
+
+        let system_address = self.system_address.ok_or_else(|| ParseError::InvalidValue {
+            field: "system_address".to_string(),
+            value: "None".to_string(),
+            reason: "System address is required".to_string(),
+        })?;
+
+        let component_type = self.component_type.ok_or_else(|| ParseError::InvalidValue {
+            field: "component_type".to_string(),
+            value: "None".to_string(),
+            reason: "Component type is required".to_string(),
+        })?;
+
+        let component_address = self.component_address.ok_or_else(|| ParseError::InvalidValue {
+            field: "component_address".to_string(),
+            value: "None".to_string(),
+            reason: "Component address is required".to_string(),
+        })?;
+
+        let analog_type = self.analog_type.ok_or_else(|| ParseError::InvalidValue {
+            field: "analog_type".to_string(),
+            value: "None".to_string(),
+            reason: "Analog type is required".to_string(),
+        })?;
+
+        let analog_value = self.analog_value.ok_or_else(|| ParseError::InvalidValue {
+            field: "analog_value".to_string(),
+            value: "None".to_string(),
+            reason: "Analog value is required".to_string(),
+        })?;
+
+        let timestamp = self.timestamp.ok_or_else(|| ParseError::InvalidValue {
+            field: "timestamp".to_string(),
+            value: "None".to_string(),
+            reason: "Timestamp is required".to_string(),
+        })?;
+
+        let analog_val = InfoAnalogValue::new(
+            system_type,
+            system_address,
+            component_type,
+            component_address,
+            analog_type,
+            analog_value,
+            timestamp,
+        );        match self.data_unit_type {
+            DataUnitType::UploadAnalogValue => {
+                Ok(GenericDataUnit::UploadAnalogValue(
+                    upstream::UploadAnalogValue::new(analog_val, timestamp)
+                ))
+            }
+            _ => Err(ParseError::InvalidValue {
+                field: "data_unit_type".to_string(),
+                value: format!("{:?}", self.data_unit_type),
+                reason: "Incompatible data unit type for analog value".to_string(),
+            }),
         }
-        self.value = Some(value);
-        Ok(self)
-    }    /// 设置为温度类型
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn temperature(self) -> Self {
-        self.analog_type(AnalogType::Temperature)
-    }
-
-    /// 设置为压力类型（MPa）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn pressure_mpa(self) -> Self {
-        self.analog_type(AnalogType::PressureMPa)
-    }
-
-    /// 设置为压力类型（kPa）
-    /// 
-    /// # Returns
-    /// * `Self` - 构建器实例
-    pub fn pressure_kpa(self) -> Self {
-        self.analog_type(AnalogType::PressureKPa)
     }
 }
 
-impl Builder<AnalogValue> for AnalogValueBuilder {    fn build(self) -> EncodeResult<AnalogValue> {
-        self.validate()?;
-        AnalogValue::new(
-            self.system_type.unwrap(),
-            self.system_address.unwrap() as u8,
-            self.component_type.unwrap(),
-            self.component_address.unwrap(),
-            self.analog_type.unwrap(),
-            self.value.unwrap().round() as i16,
-        )
+// 占位符构建器 - 这些需要根据实际的信息对象API进行实现
+
+/// 操作信息构建器
+pub struct OperationInfoBuilder {
+    data_unit_type: DataUnitType,
+}
+
+impl OperationInfoBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self { data_unit_type }
     }
 
-    fn validate(&self) -> EncodeResult<()> {
-        if self.system_type.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "system_type".to_string(),
-                value: "None".to_string(),
-                reason: "系统类型不能为空".to_string(),
-            });
-        }
-
-        if self.system_address.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: "None".to_string(),
-                reason: "系统地址不能为空".to_string(),
-            });
-        }        if self.analog_type.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "analog_type".to_string(),
-                value: "None".to_string(),
-                reason: "模拟量类型不能为空".to_string(),
-            });
-        }
-
-        if self.component_type.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "component_type".to_string(),
-                value: "None".to_string(),
-                reason: "部件类型不能为空".to_string(),
-            });
-        }
-
-        if self.component_address.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "component_address".to_string(),
-                value: "None".to_string(),
-                reason: "部件地址不能为空".to_string(),
-            });
-        }
-
-        if self.value.is_none() {
-            return Err(EncodeError::InvalidValue {
-                field: "value".to_string(),
-                value: "None".to_string(),
-                reason: "模拟量值不能为空".to_string(),
-            });
-        }
-
-        Ok(())
+    /// 构建数据单元 (占位符实现)
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        Err(ParseError::InvalidValue {
+            field: "operation_info".to_string(),
+            value: "builder".to_string(),
+            reason: "OperationInfo builder not yet implemented".to_string(),
+        })
     }
 }
 
-impl ResettableBuilder<AnalogValue> for AnalogValueBuilder {    fn reset(&mut self) {
-        self.system_type = None;
-        self.system_address = None;
-        self.component_type = None;
-        self.component_address = None;
-        self.analog_type = None;
-        self.value = None;
+/// 版本信息构建器
+pub struct VersionInfoBuilder {
+    data_unit_type: DataUnitType,
+}
+
+impl VersionInfoBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self { data_unit_type }
+    }
+
+    /// 构建数据单元 (占位符实现)
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        Err(ParseError::InvalidValue {
+            field: "version_info".to_string(),
+            value: "builder".to_string(),
+            reason: "VersionInfo builder not yet implemented".to_string(),
+        })
     }
 }
 
-/// 通用数据单元构建器
-#[derive(Debug, Clone)]
-pub enum DataUnitBuilder {
-    /// 系统状态构建器
-    SystemStatus(SystemStatusBuilder),
-    /// 部件状态构建器
-    ComponentStatus(ComponentStatusBuilder),
-    /// 模拟量值构建器
-    AnalogValue(AnalogValueBuilder),
+/// 配置信息构建器
+pub struct ConfigInfoBuilder {
+    data_unit_type: DataUnitType,
 }
 
-impl DataUnitBuilder {
-    /// 创建系统状态构建器
-    pub fn system_status() -> SystemStatusBuilder {
-        SystemStatusBuilder::new()
+impl ConfigInfoBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self { data_unit_type }
     }
 
-    /// 创建部件状态构建器
-    pub fn component_status() -> ComponentStatusBuilder {
-        ComponentStatusBuilder::new()
-    }
-
-    /// 创建模拟量值构建器
-    pub fn analog_value() -> AnalogValueBuilder {
-        AnalogValueBuilder::new()
+    /// 构建数据单元 (占位符实现)
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        Err(ParseError::InvalidValue {
+            field: "config_info".to_string(),
+            value: "builder".to_string(),
+            reason: "ConfigInfo builder not yet implemented".to_string(),
+        })
     }
 }
 
-/// 便捷宏：创建系统状态
-/// 
-/// # Example
-/// ```rust
-/// use gb26875::system_status;
-/// use gb26875::protocol::SystemType;
-/// 
-/// let status = system_status!(FireAlarm, 0x123456);
-/// ```
-#[macro_export]
-macro_rules! system_status {
-    ($system_type:expr, $address:expr) => {
-        $crate::builder::SystemStatusBuilder::new()
-            .system_type($system_type)
-            .system_address($address)
-            .map(|b| b.build())
-    };
+/// 时间信息构建器
+pub struct TimeInfoBuilder {
+    data_unit_type: DataUnitType,
 }
 
-/// 便捷宏：创建部件状态
-/// 
-/// # Example
-/// ```rust
-/// use gb26875::component_status;
-/// use gb26875::protocol::{SystemType, ComponentType};
-/// 
-/// let status = component_status!(
-///     FireAlarm, 0x123456,
-///     SmokeDetector, 0x87654321,
-///     0x01, "烟雾探测器"
-/// );
-/// ```
-#[macro_export]
-macro_rules! component_status {
-    ($sys_type:expr, $sys_addr:expr, $comp_type:expr, $comp_addr:expr, $status:expr, $desc:expr) => {
-        $crate::builder::ComponentStatusBuilder::new()
-            .system_type($sys_type)
-            .system_address($sys_addr)
-            .and_then(|b| b.component_type($comp_type).component_address($comp_addr).status($status).description_str($desc))
-            .map(|b| b.build())
-    };
-}
-
-#[cfg(test)]
-mod tests {
-    use super::*;
-
-    #[test]
-    fn test_system_status_builder() {
-        let status = SystemStatusBuilder::new()
-            .fire_alarm_system()
-            .system_address(0x123456).unwrap()
-            .build()
-            .unwrap();
-
-        assert_eq!(status.system_type, SystemType::FireAlarm);
-        assert_eq!(status.system_address, 0x123456);
+impl TimeInfoBuilder {
+    fn new(data_unit_type: DataUnitType) -> Self {
+        Self { data_unit_type }
     }
 
-    #[test]
-    fn test_component_status_builder() {
-        let status = ComponentStatusBuilder::new()
-            .system_type(SystemType::FireAlarm)
-            .system_address(0x12)
-            .smoke_detector()
-            .component_address(0x87654321)
-            .alarm_status()
-            .description_str("烟雾探测器").unwrap()
-            .build()
-            .unwrap();        
-        assert_eq!(status.system_type, SystemType::FireAlarm);
-        assert_eq!(status.component_type, ComponentType::SmokeFireDetector);
-        assert_eq!(status.status, 0x01);
-    }    
-    #[test]
-    fn test_analog_value_builder() {
-        let value = AnalogValueBuilder::new()
-            .system_type(SystemType::AutoSprinkler)
-            .system_address(0x123456).unwrap()
-            .component_type(ComponentType::SmokeFireDetector)
-            .component_address(0x87654321)
-            .temperature()
-            .value(25.5).unwrap()
-            .build()
-            .unwrap();
-
-        assert_eq!(value.system_type, SystemType::AutoSprinkler);
-        assert_eq!(value.component_type, ComponentType::SmokeFireDetector);
-        assert_eq!(value.analog_type, AnalogType::Temperature);
-        assert_eq!(value.value, 26); // i16 值，因为25.5会被转换为26
-    }
-
-    #[test]
-    fn test_builder_validation() {
-        let builder = SystemStatusBuilder::new();
-        assert!(builder.validate().is_err());
-
-        let builder = SystemStatusBuilder::new().fire_alarm_system();
-        assert!(builder.validate().is_err()); // 缺少地址
-
-        let result = SystemStatusBuilder::new()
-            .fire_alarm_system()
-            .system_address(0xFFFFFF + 1); // 地址过大
-
-        assert!(result.is_err());
-    }
-
-    #[test]
-    fn test_resettable_builder() {
-        let mut builder = SystemStatusBuilder::new()
-            .fire_alarm_system()
-            .system_address(0x123456).unwrap();
-
-        let status = builder.build_and_reset().unwrap();
-        assert_eq!(status.system_type, SystemType::FireAlarm);
-
-        // 构建器应该被重置
-        assert!(builder.validate().is_err());
+    /// 构建数据单元 (占位符实现) 
+    pub fn build(self) -> ParseResult<GenericDataUnit> {
+        Err(ParseError::InvalidValue {
+            field: "time_info".to_string(),
+            value: "builder".to_string(),
+            reason: "TimeInfo builder not yet implemented".to_string(),
+        })
     }
 }

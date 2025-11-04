@@ -389,7 +389,7 @@ impl Default for PacketBuilder {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::data_unit::standard::SystemStatus;
+    use crate::info_object::SystemStatus;
     use crate::protocol::SystemType;
 
     #[test]
@@ -410,9 +410,15 @@ mod tests {
     }
 
     #[test]
-    fn test_packet_builder_with_data_unit() {
-        let status = SystemStatus::new(SystemType::FireAlarm, 0x123456).unwrap();
-        let data_unit = GenericDataUnit::SystemStatus(status);
+    fn test_packet_builder_with_data_unit() {        let status = SystemStatus::new(
+            SystemType::FireAlarm,
+            1,  // system_address
+            0x0002,  // system_state 
+            Timestamp::now()
+        );
+        let data_unit = GenericDataUnit::UploadSystemStatus(
+            crate::data_unit::standard::upstream::UploadSystemStatus::new(status, Timestamp::now())
+        );
 
         let packet = PacketBuilder::new()
             .sequence(2)
@@ -423,11 +429,10 @@ mod tests {
             .command(Command::SendData)
             .data_unit(data_unit).unwrap()
             .build()
-            .unwrap();
-
-        assert_eq!(packet.control_unit.sequence, 2);        assert_eq!(packet.control_unit.command, Command::SendData);
+            .unwrap();        assert_eq!(packet.control_unit.sequence, 2);
+        assert_eq!(packet.control_unit.command, Command::SendData);
         assert!(packet.data_unit.is_some());
-        assert_eq!(packet.control_unit.data_unit_len, 4); // SystemStatus 是 4 字节
+        assert_eq!(packet.control_unit.data_unit_len, 17); // UploadSystemStatus 是 17 字节 (1+10+6)
     }    #[test]
     fn test_packet_builder_heartbeat() {
         let packet = PacketBuilder::heartbeat(1, 0x123456, 0x654321)

@@ -33,7 +33,7 @@ fn basic_packet_demo() -> Result<(), Box<dyn std::error::Error>> {
     
     // 创建控制单元
     let control_unit = ControlUnit::new(
-        1,                          // 序列号
+        1,                   // 序列号
         ProtocolVersion::new(1, 0), // 协议版本
         Timestamp::now(),           // 时间戳
         0x123456,                   // 源地址

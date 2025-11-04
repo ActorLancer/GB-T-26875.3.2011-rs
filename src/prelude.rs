@@ -22,15 +22,18 @@ pub use crate::parser::{PacketParser, FrameDetector, DataValidator};
 
 // 构建器
 pub use crate::builder::packet::PacketBuilder;
-pub use crate::builder::data_unit::{SystemStatusBuilder, ComponentStatusBuilder, AnalogValueBuilder};
+pub use crate::builder::data_unit::{
+    DataUnitBuilder, SystemStatusBuilder, ComponentStatusBuilder, AnalogValueBuilder
+};
 
 // 数据单元
 pub use crate::data_unit::{DataUnit, GenericDataUnit};
-pub use crate::data_unit::standard::{SystemStatus as DataSystemStatus, ComponentStatus as DataComponentStatus, AnalogValue as DataAnalogValue};
+pub use crate::data_unit::standard::{upstream, downstream};
 
-// 信息对象
+// 信息对象 (重新导出以便构建器使用)
 pub use crate::info_object::{
-    InfoObject, SystemStatus, ComponentStatus, AnalogValue, AnalogType as InfoAnalogType,
+    InfoObject, 
+    SystemStatus, ComponentStatus, AnalogValue, AnalogType as InfoAnalogType,
     FireSystemOperation, DeviceOperation, FireSystemVersion, DeviceVersion,
     FireSystemConfig, ComponentConfig, DeviceConfig
 };
