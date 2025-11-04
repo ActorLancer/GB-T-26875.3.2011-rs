@@ -119,15 +119,15 @@ pub enum ParseError {
     UnsupportedVersion {
         /// 版本字符串
         version: String,
-    },
-
-    /// 无效的值
-    #[error("Invalid value: {value} for field '{field}'")]
+    },    /// 无效的值
+    #[error("Invalid value: {value} for field '{field}' - {reason}")]
     InvalidValue { 
         /// 字段名称
         field: String, 
         /// 字段值
-        value: String 
+        value: String,
+        /// 错误原因
+        reason: String 
     },
 
     /// 无效的时间戳

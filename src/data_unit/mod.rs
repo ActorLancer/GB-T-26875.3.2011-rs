@@ -4,9 +4,18 @@
 //! 位于数据包的控制单元之后，结束符之前。
 
 pub mod standard;
+pub mod upstream;
+pub mod downstream;
 
 // 重新导出主要类型
 pub use standard::*;
+pub use upstream::{
+    UploadSystemStatus, UploadComponentStatus, UploadAnalogValue, UploadOperationInfo,
+    UploadSoftwareVersion, UploadSystemConfig, UploadComponentConfig, UploadSystemTime,
+    UploadDeviceStatus, UploadDeviceOperation, UploadDeviceVersion, UploadDeviceConfig, UploadDeviceTime
+};
+pub use downstream::{ReadSystemStatus, ReadComponentStatus, ReadAnalogValue, 
+                     SyncDeviceClock, PatrolCommand, InitializeDevice};
 
 use crate::error::{ParseResult, EncodeResult};
 use crate::protocol::DataUnitType;
@@ -46,22 +55,27 @@ pub trait DataUnit: std::fmt::Debug + Send + Sync {
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GenericDataUnit {
-    /// 系统状态（类型 1）
+    // 标准数据单元 (仅用于向后兼容)
+    /// 系统状态（标准类型）
     SystemStatus(standard::SystemStatus),
-    /// 部件类型（类型 2）
+    /// 部件类型（标准类型）
     ComponentType(standard::ComponentType),
-    /// 部件状态（类型 3）
+    /// 部件状态（标准类型）
     ComponentStatus(standard::ComponentStatus),
-    /// 模拟量值（类型 4）
+    /// 模拟量值（标准类型）
     AnalogValue(standard::AnalogValue),
-    /// 操作信息（类型 5）
+    /// 操作信息（标准类型）
     OperationInfo(standard::OperationInfo),
-    /// 软件版本（类型 6）
+    /// 软件版本（标准类型）
     SoftwareVersion(standard::SoftwareVersion),
-    /// 配置信息（类型 7）
+    /// 配置信息（标准类型）
     ConfigInfo(standard::ConfigInfo),
-    /// 时间（类型 8）
+    /// 时间（标准类型）
     Time(standard::Time),
+
+    // TODO: 上行和下行数据单元将在后续迭代中添加
+    // 当前专注于基础架构完善
+
     /// 未知或用户自定义类型的原始数据
     Raw {
         /// 数据单元类型

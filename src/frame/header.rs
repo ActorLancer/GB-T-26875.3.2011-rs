@@ -229,6 +229,7 @@ impl ControlUnit {
             return Err(crate::error::ParseError::InvalidValue {
                 field: "control_unit".to_string(),
                 value: "validation failed".to_string(),
+                reason: "控制单元验证失败".to_string(),
             });
         }
         Ok(())

@@ -44,7 +44,8 @@ impl FireSystemConfig {
         if config_description.len() > 255 {
             return Err(crate::error::ParseError::InvalidValue { 
                 field: "config_description_length".to_string(),
-                value: config_description.len().to_string()
+                value: config_description.len().to_string(),
+                reason: "配置说明长度不能超过255字节".to_string(),
             });
         }
         

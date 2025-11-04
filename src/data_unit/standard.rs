@@ -85,6 +85,7 @@ impl DataUnit for SystemStatus {    fn data_unit_type(&self) -> DataUnitType {
             return Err(ParseError::InvalidValue {
                 field: "system_address".to_string(),
                 value: self.system_address.to_string(),
+                reason: "System address must be <= 0xFFFFFF (3 bytes)".to_string(),
             });
         }
         Ok(())
@@ -188,6 +189,7 @@ impl DataUnit for ComponentType {    fn data_unit_type(&self) -> DataUnitType {
             return Err(ParseError::InvalidValue {
                 field: "system_address".to_string(),
                 value: self.system_address.to_string(),
+                reason: "System address must be <= 0xFFFFFF (3 bytes)".to_string(),
             });
         }
         Ok(())
@@ -354,6 +356,7 @@ impl DataUnit for ComponentStatus {    fn data_unit_type(&self) -> DataUnitType 
             return Err(ParseError::InvalidValue {
                 field: "description".to_string(),
                 value: format!("{} bytes", self.description.len()),
+                reason: "Description length exceeds 31 bytes".to_string(),
             });
         }
         
