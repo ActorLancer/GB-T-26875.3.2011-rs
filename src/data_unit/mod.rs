@@ -104,9 +104,38 @@ pub enum GenericDataUnit {
     
     /// 下行数据单元 - 读建筑消防设施部件运行状态 (类型62)
     ReadComponentStatus(standard::downstream::ReadComponentStatus),
-    
-    /// 下行数据单元 - 读建筑消防设施模拟量值 (类型63)
+      /// 下行数据单元 - 读建筑消防设施模拟量值 (类型63)
     ReadAnalogValue(standard::downstream::ReadAnalogValue),
+    
+    /// 下行数据单元 - 读建筑消防设施操作信息 (类型64)
+    ReadOperationInfo(standard::downstream::ReadOperationInfo),
+    
+    /// 下行数据单元 - 读建筑消防设施软件版本 (类型65)
+    ReadSoftwareVersion(standard::downstream::ReadSoftwareVersion),
+    
+    /// 下行数据单元 - 读建筑消防设施系统配置情况 (类型66)
+    ReadSystemConfig(standard::downstream::ReadSystemConfig),
+    
+    /// 下行数据单元 - 读建筑消防设施部件配置情况 (类型67)
+    ReadComponentConfig(standard::downstream::ReadComponentConfig),
+    
+    /// 下行数据单元 - 读建筑消防设施系统时间 (类型68)
+    ReadSystemTime(standard::downstream::ReadSystemTime),
+    
+    /// 下行数据单元 - 读用户信息传输装置运行状态 (类型81)
+    ReadDeviceStatus(standard::downstream::ReadDeviceStatus),
+    
+    /// 下行数据单元 - 读用户信息传输装置操作信息记录 (类型84)
+    ReadDeviceOperation(standard::downstream::ReadDeviceOperation),
+    
+    /// 下行数据单元 - 读用户信息传输装置软件版本 (类型85)
+    ReadDeviceVersion(standard::downstream::ReadDeviceVersion),
+    
+    /// 下行数据单元 - 读用户信息传输装置配置情况 (类型86)
+    ReadDeviceConfig(standard::downstream::ReadDeviceConfig),
+    
+    /// 下行数据单元 - 读用户信息传输装置系统时间 (类型88)
+    ReadDeviceTime(standard::downstream::ReadDeviceTime),
     
     /// 下行数据单元 - 初始化用户信息传输装置 (类型89)
     InitializeDevice(standard::downstream::InitializeDevice),
@@ -205,10 +234,49 @@ impl GenericDataUnit {
             DataUnitType::ReadComponentStatus => {
                 let unit = standard::downstream::ReadComponentStatus::parse(data)?;
                 Ok(GenericDataUnit::ReadComponentStatus(unit))
-            }
-            DataUnitType::ReadAnalogValue => {
+            }            DataUnitType::ReadAnalogValue => {
                 let unit = standard::downstream::ReadAnalogValue::parse(data)?;
                 Ok(GenericDataUnit::ReadAnalogValue(unit))
+            }
+            DataUnitType::ReadOperationInfo => {
+                let unit = standard::downstream::ReadOperationInfo::parse(data)?;
+                Ok(GenericDataUnit::ReadOperationInfo(unit))
+            }
+            DataUnitType::ReadSoftwareVersion => {
+                let unit = standard::downstream::ReadSoftwareVersion::parse(data)?;
+                Ok(GenericDataUnit::ReadSoftwareVersion(unit))
+            }
+            DataUnitType::ReadSystemConfig => {
+                let unit = standard::downstream::ReadSystemConfig::parse(data)?;
+                Ok(GenericDataUnit::ReadSystemConfig(unit))
+            }
+            DataUnitType::ReadComponentConfig => {
+                let unit = standard::downstream::ReadComponentConfig::parse(data)?;
+                Ok(GenericDataUnit::ReadComponentConfig(unit))
+            }
+            DataUnitType::ReadSystemTime => {
+                let unit = standard::downstream::ReadSystemTime::parse(data)?;
+                Ok(GenericDataUnit::ReadSystemTime(unit))
+            }
+            DataUnitType::ReadDeviceStatus => {
+                let unit = standard::downstream::ReadDeviceStatus::parse(data)?;
+                Ok(GenericDataUnit::ReadDeviceStatus(unit))
+            }
+            DataUnitType::ReadDeviceOperation => {
+                let unit = standard::downstream::ReadDeviceOperation::parse(data)?;
+                Ok(GenericDataUnit::ReadDeviceOperation(unit))
+            }
+            DataUnitType::ReadDeviceVersion => {
+                let unit = standard::downstream::ReadDeviceVersion::parse(data)?;
+                Ok(GenericDataUnit::ReadDeviceVersion(unit))
+            }
+            DataUnitType::ReadDeviceConfig => {
+                let unit = standard::downstream::ReadDeviceConfig::parse(data)?;
+                Ok(GenericDataUnit::ReadDeviceConfig(unit))
+            }
+            DataUnitType::ReadDeviceTime => {
+                let unit = standard::downstream::ReadDeviceTime::parse(data)?;
+                Ok(GenericDataUnit::ReadDeviceTime(unit))
             }
             DataUnitType::InitializeDevice => {
                 let unit = standard::downstream::InitializeDevice::parse(data)?;
@@ -246,10 +314,19 @@ impl GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => unit.data_unit_type(),
             GenericDataUnit::UploadDeviceVersion(unit) => unit.data_unit_type(),
             GenericDataUnit::UploadDeviceConfig(unit) => unit.data_unit_type(),
-            GenericDataUnit::UploadDeviceTime(unit) => unit.data_unit_type(),
-            GenericDataUnit::ReadSystemStatus(unit) => unit.data_unit_type(),
+            GenericDataUnit::UploadDeviceTime(unit) => unit.data_unit_type(),            GenericDataUnit::ReadSystemStatus(unit) => unit.data_unit_type(),
             GenericDataUnit::ReadComponentStatus(unit) => unit.data_unit_type(),
             GenericDataUnit::ReadAnalogValue(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadOperationInfo(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadSoftwareVersion(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadSystemConfig(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadComponentConfig(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadSystemTime(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadDeviceStatus(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadDeviceOperation(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadDeviceVersion(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadDeviceConfig(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadDeviceTime(unit) => unit.data_unit_type(),
             GenericDataUnit::InitializeDevice(unit) => unit.data_unit_type(),
             GenericDataUnit::SyncDeviceClock(unit) => unit.data_unit_type(),
             GenericDataUnit::PatrolCommand(unit) => unit.data_unit_type(),
@@ -273,10 +350,19 @@ impl GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => unit.encode(),
             GenericDataUnit::UploadDeviceVersion(unit) => unit.encode(),
             GenericDataUnit::UploadDeviceConfig(unit) => unit.encode(),
-            GenericDataUnit::UploadDeviceTime(unit) => unit.encode(),
-            GenericDataUnit::ReadSystemStatus(unit) => unit.encode(),
+            GenericDataUnit::UploadDeviceTime(unit) => unit.encode(),            GenericDataUnit::ReadSystemStatus(unit) => unit.encode(),
             GenericDataUnit::ReadComponentStatus(unit) => unit.encode(),
             GenericDataUnit::ReadAnalogValue(unit) => unit.encode(),
+            GenericDataUnit::ReadOperationInfo(unit) => unit.encode(),
+            GenericDataUnit::ReadSoftwareVersion(unit) => unit.encode(),
+            GenericDataUnit::ReadSystemConfig(unit) => unit.encode(),
+            GenericDataUnit::ReadComponentConfig(unit) => unit.encode(),
+            GenericDataUnit::ReadSystemTime(unit) => unit.encode(),
+            GenericDataUnit::ReadDeviceStatus(unit) => unit.encode(),
+            GenericDataUnit::ReadDeviceOperation(unit) => unit.encode(),
+            GenericDataUnit::ReadDeviceVersion(unit) => unit.encode(),
+            GenericDataUnit::ReadDeviceConfig(unit) => unit.encode(),
+            GenericDataUnit::ReadDeviceTime(unit) => unit.encode(),
             GenericDataUnit::InitializeDevice(unit) => unit.encode(),
             GenericDataUnit::SyncDeviceClock(unit) => unit.encode(),
             GenericDataUnit::PatrolCommand(unit) => unit.encode(),
@@ -300,10 +386,19 @@ impl GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => unit.validate(),
             GenericDataUnit::UploadDeviceVersion(unit) => unit.validate(),
             GenericDataUnit::UploadDeviceConfig(unit) => unit.validate(),
-            GenericDataUnit::UploadDeviceTime(unit) => unit.validate(),
-            GenericDataUnit::ReadSystemStatus(unit) => unit.validate(),
+            GenericDataUnit::UploadDeviceTime(unit) => unit.validate(),            GenericDataUnit::ReadSystemStatus(unit) => unit.validate(),
             GenericDataUnit::ReadComponentStatus(unit) => unit.validate(),
             GenericDataUnit::ReadAnalogValue(unit) => unit.validate(),
+            GenericDataUnit::ReadOperationInfo(unit) => unit.validate(),
+            GenericDataUnit::ReadSoftwareVersion(unit) => unit.validate(),
+            GenericDataUnit::ReadSystemConfig(unit) => unit.validate(),
+            GenericDataUnit::ReadComponentConfig(unit) => unit.validate(),
+            GenericDataUnit::ReadSystemTime(unit) => unit.validate(),
+            GenericDataUnit::ReadDeviceStatus(unit) => unit.validate(),
+            GenericDataUnit::ReadDeviceOperation(unit) => unit.validate(),
+            GenericDataUnit::ReadDeviceVersion(unit) => unit.validate(),
+            GenericDataUnit::ReadDeviceConfig(unit) => unit.validate(),
+            GenericDataUnit::ReadDeviceTime(unit) => unit.validate(),
             GenericDataUnit::InitializeDevice(unit) => unit.validate(),
             GenericDataUnit::SyncDeviceClock(unit) => unit.validate(),
             GenericDataUnit::PatrolCommand(unit) => unit.validate(),
@@ -364,10 +459,19 @@ impl Clone for GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => GenericDataUnit::UploadDeviceOperation(unit.clone()),
             GenericDataUnit::UploadDeviceVersion(unit) => GenericDataUnit::UploadDeviceVersion(unit.clone()),
             GenericDataUnit::UploadDeviceConfig(unit) => GenericDataUnit::UploadDeviceConfig(unit.clone()),
-            GenericDataUnit::UploadDeviceTime(unit) => GenericDataUnit::UploadDeviceTime(unit.clone()),
-            GenericDataUnit::ReadSystemStatus(unit) => GenericDataUnit::ReadSystemStatus(*unit),
-            GenericDataUnit::ReadComponentStatus(unit) => GenericDataUnit::ReadComponentStatus(*unit),
-            GenericDataUnit::ReadAnalogValue(unit) => GenericDataUnit::ReadAnalogValue(*unit),
+            GenericDataUnit::UploadDeviceTime(unit) => GenericDataUnit::UploadDeviceTime(unit.clone()),            GenericDataUnit::ReadSystemStatus(unit) => GenericDataUnit::ReadSystemStatus(unit.clone()),
+            GenericDataUnit::ReadComponentStatus(unit) => GenericDataUnit::ReadComponentStatus(unit.clone()),
+            GenericDataUnit::ReadAnalogValue(unit) => GenericDataUnit::ReadAnalogValue(unit.clone()),
+            GenericDataUnit::ReadOperationInfo(unit) => GenericDataUnit::ReadOperationInfo(unit.clone()),
+            GenericDataUnit::ReadSoftwareVersion(unit) => GenericDataUnit::ReadSoftwareVersion(*unit),
+            GenericDataUnit::ReadSystemConfig(unit) => GenericDataUnit::ReadSystemConfig(unit.clone()),
+            GenericDataUnit::ReadComponentConfig(unit) => GenericDataUnit::ReadComponentConfig(unit.clone()),
+            GenericDataUnit::ReadSystemTime(unit) => GenericDataUnit::ReadSystemTime(*unit),
+            GenericDataUnit::ReadDeviceStatus(unit) => GenericDataUnit::ReadDeviceStatus(*unit),
+            GenericDataUnit::ReadDeviceOperation(unit) => GenericDataUnit::ReadDeviceOperation(unit.clone()),
+            GenericDataUnit::ReadDeviceVersion(unit) => GenericDataUnit::ReadDeviceVersion(*unit),
+            GenericDataUnit::ReadDeviceConfig(unit) => GenericDataUnit::ReadDeviceConfig(*unit),
+            GenericDataUnit::ReadDeviceTime(unit) => GenericDataUnit::ReadDeviceTime(*unit),
             GenericDataUnit::InitializeDevice(unit) => GenericDataUnit::InitializeDevice(*unit),
             GenericDataUnit::SyncDeviceClock(unit) => GenericDataUnit::SyncDeviceClock(unit.clone()),
             GenericDataUnit::PatrolCommand(unit) => GenericDataUnit::PatrolCommand(*unit),

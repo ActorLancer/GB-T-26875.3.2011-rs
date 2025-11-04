@@ -209,7 +209,8 @@ impl ControlUnit {
             timestamp: Timestamp::now(),
             source_addr: self.dest_addr,
             dest_addr: self.source_addr,
-            data_unit_len,            command: Command::Response,
+            data_unit_len,            
+            command: Command::Response,
         }
     }
 
