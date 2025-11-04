@@ -2,10 +2,14 @@
 //!
 //! 定义了扩展数据单元需要实现的 trait 和相关类型
 
-use crate::error::{EncodeError, ParseError, ExtensionError, ExtensionResult};
+#[cfg(test)]
+use crate::error::ParseError;
 use bytes::Bytes;
 use std::any::Any;
 use std::fmt;
+
+// 重新导出供外部使用
+pub use crate::error::{ExtensionError, ExtensionResult};
 
 
 

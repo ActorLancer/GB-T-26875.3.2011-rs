@@ -205,48 +205,39 @@ impl std::fmt::Display for ComponentType {
     }
 }
 
-/// 部件状态数据单元（类型 3，40字节）
-/// 
+/// 部件状态数据单元（类型 2，40字节）
+///
 /// 用于上报部件的详细状态信息
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ComponentStatus {
     /// 系统类型
     pub system_type: SystemType,
-    /// 系统地址（3字节）
-    pub system_address: u32,
+    /// 系统地址（1字节）
+    pub system_address: u8,
     /// 部件类型
     pub component_type: ProtocolComponentType,
     /// 部件地址（4字节）
     pub component_address: u32,
-    /// 部件状态（1字节）
-    pub status: u8,
+    /// 部件状态（2字节）
+    pub status: u16,
     /// 部件说明（31字节，GB2312编码）
     pub description: Vec<u8>,
 }
 
-impl ComponentStatus {
-    /// 创建新的部件状态
+impl ComponentStatus {    /// 创建新的部件状态
     pub fn new(
         system_type: SystemType,
-        system_address: u32,
+        system_address: u8,
         component_type: ProtocolComponentType,
         component_address: u32,
-        status: u8,
-        description: Vec<u8>,    ) -> EncodeResult<Self> {
-        if system_address > 0xFFFFFF {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: system_address.to_string(),
-                reason: "System address must be <= 0xFFFFFF (3 bytes)".to_string(),
-            });
-        }
-
+        status: u16,
+        description: Vec<u8>,
+    ) -> EncodeResult<Self> {
         if description.len() > 31 {
-            return Err(EncodeError::InvalidValue {
-                field: "description".to_string(),
-                value: format!("{} bytes", description.len()),
-                reason: "Description must be <= 31 bytes".to_string(),
+            return Err(EncodeError::StringTooLong {
+                len: description.len(),
+                max: 31,
             });
         }
 
@@ -258,15 +249,13 @@ impl ComponentStatus {
             status,
             description,
         })
-    }
-
-    /// 使用字符串描述创建部件状态（自动GB2312编码）
+    }    /// 使用字符串描述创建部件状态（自动GB2312编码）
     pub fn with_description_str(
         system_type: SystemType,
-        system_address: u32,
+        system_address: u8,
         component_type: ProtocolComponentType,
         component_address: u32,
-        status: u8,
+        status: u16,
         description: &str,
     ) -> EncodeResult<Self> {
         // 使用 GB2312 编码描述
@@ -306,18 +295,14 @@ impl ComponentStatus {
 
 impl DataUnit for ComponentStatus {    fn data_unit_type(&self) -> DataUnitType {
         DataUnitType::UploadComponentStatus
-    }
-
-    fn encode(&self) -> EncodeResult<Bytes> {
+    }    fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::with_capacity(40);
         
         // 系统类型（1字节）
         buf.put_u8(self.system_type.to_u8());
         
-        // 系统地址（3字节，小端序）
-        buf.put_u8((self.system_address & 0xFF) as u8);
-        buf.put_u8(((self.system_address >> 8) & 0xFF) as u8);
-        buf.put_u8(((self.system_address >> 16) & 0xFF) as u8);
+        // 系统地址（1字节）
+        buf.put_u8(self.system_address);
         
         // 部件类型（1字节）
         buf.put_u8(self.component_type.to_u8());
@@ -325,8 +310,8 @@ impl DataUnit for ComponentStatus {    fn data_unit_type(&self) -> DataUnitType 
         // 部件地址（4字节，小端序）
         buf.put_u32_le(self.component_address);
         
-        // 部件状态（1字节）
-        buf.put_u8(self.status);
+        // 部件状态（2字节，小端序）
+        buf.put_u16_le(self.status);
         
         // 部件说明（31字节，填充0）
         let mut desc = self.description.clone();
@@ -334,9 +319,7 @@ impl DataUnit for ComponentStatus {    fn data_unit_type(&self) -> DataUnitType 
         buf.put_slice(&desc);
         
         Ok(buf.freeze())
-    }
-
-    fn parse(data: &[u8]) -> ParseResult<Self> {
+    }    fn parse(data: &[u8]) -> ParseResult<Self> {
         if data.len() != 40 {
             return Err(ParseError::InvalidDataLength {
                 expected: 40,
@@ -345,13 +328,13 @@ impl DataUnit for ComponentStatus {    fn data_unit_type(&self) -> DataUnitType 
         }
 
         let system_type = SystemType::from_u8(data[0]);
-        let system_address = u32::from_le_bytes([data[1], data[2], data[3], 0]);
-        let component_type = ProtocolComponentType::from_u8(data[4]);
-        let component_address = u32::from_le_bytes([data[5], data[6], data[7], data[8]]);
-        let status = data[9];
+        let system_address = data[1];
+        let component_type = ProtocolComponentType::from_u8(data[2]);
+        let component_address = u32::from_le_bytes([data[3], data[4], data[5], data[6]]);
+        let status = u16::from_le_bytes([data[7], data[8]]);
         
         // 读取描述并移除尾部的0
-        let mut description = data[10..41].to_vec();
+        let mut description = data[9..40].to_vec();
         while description.last() == Some(&0) {
             description.pop();
         }
@@ -364,15 +347,8 @@ impl DataUnit for ComponentStatus {    fn data_unit_type(&self) -> DataUnitType 
             status,
             description,
         })
-    }
-
-    fn validate(&self) -> ParseResult<()> {
-        if self.system_address > 0xFFFFFF {
-            return Err(ParseError::InvalidValue {
-                field: "system_address".to_string(),
-                value: self.system_address.to_string(),
-            });
-        }
+    }    fn validate(&self) -> ParseResult<()> {
+        // system_address 是 u8 类型，自动在有效范围内
         
         if self.description.len() > 31 {
             return Err(ParseError::InvalidValue {
@@ -850,15 +826,14 @@ mod tests {
         assert_eq!(value.component_address, decoded.component_address);
         assert_eq!(value.analog_type, decoded.analog_type);
         assert_eq!(value.value, decoded.value);
-    }
-
-    #[test]
+    }    #[test]
     fn test_component_status() {
         let status = ComponentStatus::with_description_str(
-            SystemType::FireAlarm,            0x123456,
+            SystemType::FireAlarm,
+            0x12, // 改为u8
             ProtocolComponentType::SmokeFireDetector,
             0x87654321,
-            0x01,
+            0x0102, // 改为u16
             "测试部件",
         ).unwrap();
         

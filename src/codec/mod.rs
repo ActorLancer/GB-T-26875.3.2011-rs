@@ -167,15 +167,14 @@ impl StreamCodec {
     pub fn try_decode(&mut self) -> ParseResult<Option<Packet>> {
         if self.buffer.is_empty() {
             return Ok(None);
-        }
-
-        match Packet::try_parse(&self.buffer) {
+        }        match Packet::try_parse(&self.buffer) {
             Ok((packet, consumed)) => {
                 // 从缓冲区移除已消费的字节
                 self.buffer.advance(consumed);
                 Ok(Some(packet))
             }
-            Err(ParseError::InsufficientData { .. }) => {
+            Err(ParseError::InsufficientData { .. }) | 
+            Err(ParseError::TooShort { .. }) => {
                 // 数据不足，需要等待更多数据
                 Ok(None)
             }
@@ -345,9 +344,7 @@ mod tests {
     use crate::frame::{ControlUnit, Timestamp};
     use crate::protocol::{Command, ProtocolVersion};
     use crate::data_unit::standard::SystemStatus;
-    use crate::protocol::SystemType;
-
-    fn create_test_packet() -> Packet {
+    use crate::protocol::SystemType;    fn create_test_packet() -> Packet {
         let control_unit = ControlUnit::new(
             1,
             ProtocolVersion::v1_0(),
@@ -355,9 +352,9 @@ mod tests {
             0x123456,
             0x654321,
             0,
-            Command::Heartbeat,
-        );
-        Packet::without_data(control_unit).unwrap()
+            Command::Control,
+        ).unwrap();
+        Packet::empty(control_unit)
     }
 
     #[test]

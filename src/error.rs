@@ -6,13 +6,14 @@ use thiserror::Error;
 #[derive(Error, Debug)]
 pub enum ParseError {
     /// 地址错误
-    #[error("Address error: {0} - {1}")]
-    ValidAddress(u64, String),    /// 数据包太短  
+    #[error("Address error: {0} - {1}")]    ValidAddress(u64, String),    
+    
+    /// 数据包太短  
     #[error("Packet too short: got {got} bytes, need at least {need}")]
     TooShort { 
         /// 实际获得的字节数
         got: usize, 
-        /// 需要的最少字节数
+        /// 需要的字节数
         need: usize 
     },
 
@@ -181,7 +182,9 @@ pub enum EncodeError {
 pub enum ExtensionError {
     /// 类型标志无效
     #[error("Invalid type flag: {0} (must be 128-255)")]
-    InvalidTypeFlag(u8),    /// 扩展已注册
+    InvalidTypeFlag(u8),
+    
+    /// 扩展已注册
     #[error("Extension already registered for type {type_id}")]
     AlreadyRegistered { 
         /// 类型ID
@@ -203,6 +206,17 @@ pub enum ExtensionError {
         /// 错误信息
         error: String 
     },
+
+    /// 验证错误
+    #[error("Validation error: {reason}")]
+    ValidationError {
+        /// 错误原因
+        reason: String
+    },
+
+    /// 解析错误
+    #[error("Parse error")]
+    ParseError(#[from] ParseError),
 
     /// 注册表锁错误
     #[error("Registry lock error")]

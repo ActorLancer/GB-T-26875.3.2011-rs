@@ -109,10 +109,10 @@ impl ResettableBuilder<SystemStatus> for SystemStatusBuilder {
 #[derive(Debug, Clone, Default)]
 pub struct ComponentStatusBuilder {
     system_type: Option<SystemType>,
-    system_address: Option<u32>,
+    system_address: Option<u8>, // 改为u8
     component_type: Option<ComponentType>,
     component_address: Option<u32>,
-    status: Option<u8>,
+    status: Option<u16>, // 改为u16
     description: Option<Vec<u8>>,
 }
 
@@ -144,20 +144,13 @@ impl ComponentStatusBuilder {
     /// 设置系统地址
     /// 
     /// # Arguments
-    /// * `address` - 系统地址（3字节）
+    /// * `address` - 系统地址（1字节）
     /// 
     /// # Returns
-    /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn system_address(mut self, address: u32) -> EncodeResult<Self> {
-        if address > 0xFFFFFF {
-            return Err(EncodeError::InvalidValue {
-                field: "system_address".to_string(),
-                value: format!("0x{:X}", address),
-                reason: "系统地址必须在 3 字节范围内".to_string(),
-            });
-        }
+    /// * `Self` - 构建器实例
+    pub fn system_address(mut self, address: u8) -> Self {
         self.system_address = Some(address);
-        Ok(self)
+        self
     }
 
     /// 设置部件类型
@@ -187,11 +180,11 @@ impl ComponentStatusBuilder {
     /// 设置部件状态
     /// 
     /// # Arguments
-    /// * `status` - 部件状态
+    /// * `status` - 部件状态（2字节）
     /// 
     /// # Returns
     /// * `Self` - 构建器实例
-    pub fn status(mut self, status: u8) -> Self {
+    pub fn status(mut self, status: u16) -> Self {
         self.status = Some(status);
         self
     }
@@ -483,15 +476,15 @@ impl AnalogValueBuilder {
     }
 }
 
-impl Builder<AnalogValue> for AnalogValueBuilder {
-    fn build(self) -> EncodeResult<AnalogValue> {        self.validate()?;
+impl Builder<AnalogValue> for AnalogValueBuilder {    fn build(self) -> EncodeResult<AnalogValue> {
+        self.validate()?;
         AnalogValue::new(
             self.system_type.unwrap(),
             self.system_address.unwrap() as u8,
             self.component_type.unwrap(),
             self.component_address.unwrap(),
             self.analog_type.unwrap(),
-            self.value.unwrap() as i16,
+            self.value.unwrap().round() as i16,
         )
     }
 
@@ -647,16 +640,18 @@ mod tests {
     fn test_component_status_builder() {
         let status = ComponentStatusBuilder::new()
             .system_type(SystemType::FireAlarm)
-            .system_address(0x123456).unwrap()
+            .system_address(0x12)
             .smoke_detector()
             .component_address(0x87654321)
             .alarm_status()
             .description_str("烟雾探测器").unwrap()
             .build()
-            .unwrap();        assert_eq!(status.system_type, SystemType::FireAlarm);
+            .unwrap();        
+        assert_eq!(status.system_type, SystemType::FireAlarm);
         assert_eq!(status.component_type, ComponentType::SmokeFireDetector);
         assert_eq!(status.status, 0x01);
-    }    #[test]
+    }    
+    #[test]
     fn test_analog_value_builder() {
         let value = AnalogValueBuilder::new()
             .system_type(SystemType::AutoSprinkler)

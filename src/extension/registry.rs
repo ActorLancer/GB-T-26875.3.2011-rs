@@ -279,8 +279,7 @@ impl ThreadSafeExtensionRegistry {
             .write()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表写锁".to_string(),
-            })?;
-
+            })?;        #[cfg(feature = "logging")]
         let count = inner.factories.len();
         inner.factories.clear();
         inner.type_infos.clear();
@@ -509,12 +508,10 @@ mod tests {
         let info = registry.get_type_info(200).unwrap().unwrap();
         assert_eq!(info.name, "TestExtension");
         assert_eq!(info.description, Some("测试扩展数据单元".to_string()));
-        assert_eq!(info.version, Some("1.0.0".to_string()));
-
-        // 测试解析
+        assert_eq!(info.version, Some("1.0.0".to_string()));        // 测试解析
         let test_data = [0x12, 0x34, 0x56, 0x78];
         let parsed = registry.parse(200, &test_data).unwrap();
-        assert_eq!(parsed.type_id(), std::any::TypeId::of::<TestExtension>());
+        assert_eq!(parsed.as_any().type_id(), std::any::TypeId::of::<TestExtension>());
 
         // 测试列出所有类型
         let types = registry.list_registered_types().unwrap();

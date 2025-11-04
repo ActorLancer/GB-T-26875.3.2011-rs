@@ -393,22 +393,20 @@ mod tests {
     use crate::protocol::SystemType;
 
     #[test]
-    fn test_packet_builder_basic() {
-        let packet = PacketBuilder::new()
+    fn test_packet_builder_basic() {        let packet = PacketBuilder::new()
             .sequence(1)
             .default_version()
             .current_timestamp()
             .source_address(0x123456).unwrap()
             .destination_address(0x654321).unwrap()
-            .command(Command::Heartbeat)
+            .command(Command::Control)
             .build()
             .unwrap();
 
         assert_eq!(packet.control_unit.sequence, 1);
         assert_eq!(packet.control_unit.source_addr, 0x123456);
-        assert_eq!(packet.control_unit.dest_addr, 0x654321);
-        assert_eq!(packet.control_unit.command, Command::Heartbeat);
-        assert!(!packet.has_data_unit());
+        assert_eq!(packet.control_unit.dest_addr, 0x654321);        assert_eq!(packet.control_unit.command, Command::Control);
+        assert!(packet.data_unit().is_none());
     }
 
     #[test]
@@ -422,7 +420,7 @@ mod tests {
             .current_timestamp()
             .source_address(0x123456).unwrap()
             .destination_address(0x654321).unwrap()
-            .command(Command::StatusUpload)
+            .command(Command::SendData)
             .data_unit(data_unit).unwrap()
             .build()
             .unwrap();
@@ -469,7 +467,7 @@ mod tests {
             .current_timestamp()
             .source_address(0x123456).unwrap()
             .destination_address(0x654321).unwrap()
-            .command(Command::Heartbeat);
+            .command(Command::SendData);
 
         let packet = builder.build_and_reset().unwrap();
         assert_eq!(packet.control_unit.sequence, 1);
@@ -485,12 +483,12 @@ mod tests {
             .sequence(42)
             .source_address(0x111111).unwrap()
             .destination_address(0x222222).unwrap()
-            .command(Command::StatusQuery);
+            .command(Command::Request);
 
         assert_eq!(builder.get_sequence(), Some(42));
         assert_eq!(builder.get_source_address(), Some(0x111111));
         assert_eq!(builder.get_destination_address(), Some(0x222222));
-        assert_eq!(builder.get_command(), Some(Command::StatusQuery));
+        assert_eq!(builder.get_command(), Some(Command::Request));
         assert!(!builder.has_data_unit());
         assert_eq!(builder.data_unit_length(), 0);
     }

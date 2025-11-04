@@ -53,7 +53,10 @@ pub trait ResettableBuilder<T>: Builder<T> + Clone {
 
 #[cfg(test)]
 mod tests {
-    use super::*;    // 测试用的简单构建器
+    use super::*;
+    use crate::error::EncodeError;
+
+    // 测试用的简单构建器
     #[derive(Clone)]
     struct TestBuilder {
         value: Option<u32>,

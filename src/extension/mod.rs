@@ -9,7 +9,9 @@ pub mod traits;
 pub use registry::*;
 pub use traits::*;
 
-use crate::error::{ParseError, ParseResult, ExtensionError, ExtensionResult};
+#[cfg(test)]
+use crate::error::ParseError;
+use crate::error::ParseResult;
 use crate::protocol::DataUnitType;
 use crate::data_unit::GenericDataUnit;
 use bytes::Bytes;
@@ -117,8 +119,7 @@ impl ExtensionRegistry {
     pub fn unregister(&mut self, type_id: u8) -> Result<(), ExtensionError> {
         if self.factories.remove(&type_id).is_none() {
             return Err(ExtensionError::NotFound { type_id });
-        }
-
+        }        #[cfg(feature = "logging")]
         let type_name = self.type_names.remove(&type_id);
 
         #[cfg(feature = "logging")]
@@ -316,8 +317,7 @@ pub fn parse_with_extensions(data_type: DataUnitType, data: &[u8]) -> GenericDat
     match data_type {
         DataUnitType::UserDefined(type_id) => {
             // 尝试使用扩展解析
-            match ExtensionManager::parse_global(type_id, data) {
-                Ok(extension) => {
+            match ExtensionManager::parse_global(type_id, data) {                Ok(_extension) => {
                     // 成功解析为扩展类型，但需要适配为 GenericDataUnit
                     // 这里我们将其作为原始数据存储，但保留类型信息
                     GenericDataUnit::Raw {
@@ -397,8 +397,7 @@ mod tests {
     }
 
     impl TestExtension {
-        fn parse(data: &[u8]) -> ParseResult<Self> {
-            if data.len() != 4 {
+        fn parse(data: &[u8]) -> ParseResult<Self> {            if data.len() != 4 {
                 return Err(ParseError::InvalidDataLength {
                     expected: 4,
                     actual: data.len(),
@@ -442,7 +441,7 @@ mod tests {
 
         // 注册全局扩展
         let result = ExtensionManager::register_global(
-            201,
+            200,  // 使用200而不是201以匹配TestExtension的type_id
             "GlobalTestExtension".to_string(),
             Box::new(|data| {
                 let ext = TestExtension::parse(data)?;
@@ -452,18 +451,18 @@ mod tests {
         assert!(result.is_ok());
 
         // 检查是否已注册
-        assert!(ExtensionManager::is_registered_global(201).unwrap());
+        assert!(ExtensionManager::is_registered_global(200).unwrap());
 
         // 测试解析
         let test_data = [0x12, 0x34, 0x56, 0x78];
-        let parsed = ExtensionManager::parse_global(201, &test_data).unwrap();
-        assert_eq!(parsed.type_id(), 201);
+        let parsed = ExtensionManager::parse_global(200, &test_data).unwrap();
+        assert_eq!(parsed.type_id(), 200);
     }
 
     #[test]
     fn test_parse_with_extensions() {
         // 测试标准类型解析
-        let standard_type = DataUnitType::SystemStatus;
+        let standard_type = DataUnitType::UploadSystemStatus;
         let standard_data = [0x01, 0x12, 0x34, 0x56]; // 系统状态数据
         let result = parse_with_extensions(standard_type, &standard_data);
         
