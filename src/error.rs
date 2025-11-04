@@ -139,15 +139,70 @@ pub enum ParseError {
         value: u8 
     },
 
+    /// 无效的时间戳（带原因）
+    #[error("Invalid timestamp: {reason}")]
+    InvalidTimestampReason { 
+        /// 错误原因
+        reason: String 
+    },
+
+    /// 缓冲区太大
+    #[error("Buffer too large: got {actual_size} bytes, max {max_size}")]
+    BufferTooLarge { 
+        /// 最大允许大小
+        max_size: usize, 
+        /// 实际大小
+        actual_size: usize 
+    },
+
+    /// 无效的编码
+    #[error("Invalid encoding '{encoding}': {reason}")]
+    InvalidEncoding { 
+        /// 编码名称
+        encoding: String, 
+        /// 错误原因
+        reason: String 
+    },
+
+    /// 不支持的编码
+    #[error("Unsupported encoding: {encoding}")]
+    UnsupportedEncoding { 
+        /// 编码名称
+        encoding: String 
+    },
+
+    /// 无效的布尔值
+    #[error("Invalid boolean value: {value} (expected 0 or 1)")]
+    InvalidBooleanValue { 
+        /// 实际值
+        value: u8 
+    },
+
+    /// 无效的枚举值
+    #[error("Invalid enum value: {value} for type {type_name} - {reason}")]
+    InvalidEnumValue { 
+        /// 实际值
+        value: u8, 
+        /// 类型名称
+        type_name: String, 
+        /// 错误原因
+        reason: String 
+    },
+
     /// 字符串编码错误
     #[error("String encoding error: {0}")]
-    StringEncoding(String),
-
-    /// 反序列化错误
+    StringEncoding(String),    /// 反序列化错误
     #[error("Deserialization error: {message}")]
     DeserializationError { 
         /// 错误消息        
         message: String 
+    },
+
+    /// 无效的数据包
+    #[error("Invalid packet: {reason}")]
+    InvalidPacket { 
+        /// 错误原因
+        reason: String 
     },
 
     /// IO错误（用于async支持）
@@ -209,11 +264,16 @@ pub enum EncodeError {
     Serialization { 
         /// 错误消息
         message: String 
-    },
-
-    /// 类型转换错误
+    },    /// 类型转换错误
     #[error("Type conversion error: {0}")]
     TypeConversion(String),
+
+    /// 无效格式
+    #[error("Invalid format: {reason}")]
+    InvalidFormat { 
+        /// 错误原因
+        reason: String 
+    },
 
     /// IO错误（用于async支持）
     #[error("IO error: {0}")]

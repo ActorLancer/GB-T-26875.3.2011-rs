@@ -1,0 +1,240 @@
+//! 数据单元编解码器
+//!
+//! 提供应用数据单元的编解码功能，支持标准类型和用户自定义类型
+
+use crate::error::{ParseError, ParseResult, EncodeResult};
+use crate::data_unit::GenericDataUnit;
+use crate::protocol::DataUnitType;
+use bytes::{Bytes, BytesMut, BufMut};
+
+/// 数据单元编解码器
+/// 
+/// 用于处理应用数据单元的编解码，支持标准类型和用户自定义类型
+#[derive(Debug, Clone, Default)]
+pub struct DataUnitCodec {
+    /// 是否启用扩展类型支持
+    enable_extensions: bool,
+}
+
+impl DataUnitCodec {
+    /// 创建新的数据单元编解码器
+    pub fn new() -> Self {
+        DataUnitCodec {
+            enable_extensions: false,
+        }
+    }
+
+    /// 创建支持扩展类型的数据单元编解码器
+    pub fn with_extensions() -> Self {
+        DataUnitCodec {
+            enable_extensions: true,
+        }
+    }
+
+    /// 编码通用数据单元为字节序列
+    /// 
+    /// # Arguments
+    /// * `data_unit` - 通用数据单元
+    /// 
+    /// # Returns
+    /// * `Result<Bytes, EncodeError>` - 成功返回字节序列
+    pub fn encode_generic(&self, data_unit: &GenericDataUnit) -> EncodeResult<Bytes> {
+        let mut buf = BytesMut::new();
+        
+        // 写入数据单元类型标识符（1字节）
+        buf.put_u8(data_unit.data_unit_type().to_u8());
+        
+        // 写入数据单元内容
+        let content = data_unit.encode()?;
+        buf.put_slice(&content);
+        
+        Ok(buf.freeze())
+    }
+
+    /// 从字节序列解码通用数据单元
+    /// 
+    /// # Arguments
+    /// * `data` - 包含类型标识符和内容的字节序列
+    /// 
+    /// # Returns
+    /// * `Result<GenericDataUnit, ParseError>` - 成功返回通用数据单元
+    pub fn decode_generic(&self, data: &[u8]) -> ParseResult<GenericDataUnit> {
+        if data.is_empty() {
+            return Err(ParseError::InsufficientData {
+                expected: 1,
+                actual: 0,
+            });
+        }
+
+        let data_type = DataUnitType::from_u8(data[0]);
+        let content = &data[1..];
+          // 检查是否为用户自定义类型
+        if matches!(data_type, DataUnitType::UserDefined(_)) && !self.enable_extensions {
+            return Err(ParseError::InvalidValue {
+                field: "data_unit_type".to_string(),
+                value: format!("{}", data[0]),
+                reason: "user defined data unit types are not enabled".to_string(),
+            });
+        }
+        
+        GenericDataUnit::from_raw(data_type, content)
+    }
+
+    /// 批量编码多个数据单元
+    pub fn encode_batch(&self, data_units: &[GenericDataUnit]) -> EncodeResult<Bytes> {
+        let mut buf = BytesMut::new();
+        
+        for data_unit in data_units {
+            let encoded = self.encode_generic(data_unit)?;
+            buf.put_slice(&encoded);
+        }
+        
+        Ok(buf.freeze())
+    }
+
+    /// 批量解码多个数据单元
+    /// 
+    /// 从连续的字节流中解析多个数据单元
+    pub fn decode_batch(&self, mut data: &[u8]) -> ParseResult<Vec<GenericDataUnit>> {
+        let mut results = Vec::new();
+        
+        while !data.is_empty() {
+            // 先检查是否有足够的数据进行类型识别
+            if data.len() < 1 {
+                break;
+            }
+            
+            // 尝试解析一个数据单元
+            let data_unit = self.decode_generic(data)?;            // 计算已消费的字节数 (类型标识符 + 内容长度)
+            let content = data_unit.encode().map_err(|_| ParseError::InvalidValue {
+                field: "data_unit_content".to_string(),
+                value: "failed to encode".to_string(),
+                reason: "encoding error during batch decode".to_string(),
+            })?;
+            let consumed = 1 + content.len();
+            
+            if consumed > data.len() {
+                return Err(ParseError::InsufficientData {
+                    expected: consumed,
+                    actual: data.len(),
+                });
+            }
+            
+            results.push(data_unit);
+            data = &data[consumed..];
+        }
+        
+        Ok(results)
+    }
+
+    /// 根据数据单元类型智能解码
+    /// 
+    /// 自动识别数据单元类型并调用相应的解码函数
+    pub fn decode_smart(&self, data: &[u8]) -> ParseResult<Box<dyn std::any::Any>> {
+        if data.is_empty() {
+            return Err(ParseError::InsufficientData {
+                expected: 1,
+                actual: 0,
+            });
+        }
+
+        // 对于智能解码，我们直接解码为通用数据单元
+        let generic = self.decode_generic(data)?;
+        Ok(Box::new(generic))
+    }
+}
+
+impl super::traits::Codec<GenericDataUnit> for DataUnitCodec {
+    fn encode(&self, data_unit: &GenericDataUnit) -> EncodeResult<Bytes> {
+        self.encode_generic(data_unit)
+    }
+
+    fn decode(&self, data: &[u8]) -> ParseResult<GenericDataUnit> {
+        self.decode_generic(data)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use super::super::traits::Codec;
+    use crate::data_unit::standard::upstream::*;
+    use crate::info_object::*;
+    use crate::protocol::types::*;
+    use crate::frame::timestamp::Timestamp;
+
+    #[test]
+    fn test_encode_decode_upload_system_status() {
+        let codec = DataUnitCodec::new();
+        
+        let system_status = SystemStatus::new(
+            SystemType::FireAlarm,
+            1,  // system_address
+            0x0002,  // system_state 
+            Timestamp::now()
+        );
+        
+        let data_unit = GenericDataUnit::UploadSystemStatus(
+            UploadSystemStatus::new(system_status, Timestamp::now())
+        );
+        
+        let encoded = codec.encode(&data_unit).unwrap();
+        let decoded = codec.decode(&encoded).unwrap();
+        
+        // 验证类型匹配
+        assert_eq!(data_unit.data_unit_type(), decoded.data_unit_type());
+    }
+
+    #[test]
+    fn test_batch_encode_decode() {
+        let codec = DataUnitCodec::new();
+        
+        let system_status = SystemStatus::new(
+            SystemType::FireAlarm,
+            1,
+            0x0002,
+            Timestamp::now()
+        );
+        
+        let data_units = vec![
+            GenericDataUnit::UploadSystemStatus(
+                UploadSystemStatus::new(system_status, Timestamp::now())
+            ),
+        ];
+        
+        let encoded = codec.encode_batch(&data_units).unwrap();
+        let decoded = codec.decode_batch(&encoded).unwrap();
+        
+        assert_eq!(data_units.len(), decoded.len());
+    }
+
+    #[test]
+    fn test_smart_decode() {
+        let codec = DataUnitCodec::new();
+        
+        let system_status = SystemStatus::new(
+            SystemType::FireAlarm,
+            1,
+            0x0002,
+            Timestamp::now()
+        );
+        
+        let data_unit = GenericDataUnit::UploadSystemStatus(
+            UploadSystemStatus::new(system_status, Timestamp::now())
+        );
+        
+        let encoded = codec.encode(&data_unit).unwrap();
+        let decoded = codec.decode_smart(&encoded).unwrap();
+        
+        // 验证可以向下转型为GenericDataUnit
+        assert!(decoded.downcast_ref::<GenericDataUnit>().is_some());
+    }
+
+    #[test]
+    fn test_codec_with_extensions() {
+        let codec = DataUnitCodec::with_extensions();
+        assert!(codec.enable_extensions);
+        
+        let codec_normal = DataUnitCodec::new();        assert!(!codec_normal.enable_extensions);
+    }
+}
