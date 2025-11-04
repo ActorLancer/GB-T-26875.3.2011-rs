@@ -84,6 +84,22 @@ pub enum ParseError {
         expected: usize 
     },
 
+    /// 数据单元长度不匹配
+    #[error("Data unit length mismatch: declared {declared}, actual {actual}")]
+    DataUnitLengthMismatch {
+        /// 声明的长度
+        declared: usize,
+        /// 实际的长度
+        actual: usize,
+    },
+
+    /// 不支持的协议版本
+    #[error("Unsupported protocol version: {version}")]
+    UnsupportedVersion {
+        /// 版本字符串
+        version: String,
+    },
+
     /// 无效的值
     #[error("Invalid value: {value} for field '{field}'")]
     InvalidValue { 
