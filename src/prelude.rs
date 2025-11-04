@@ -29,7 +29,11 @@ pub use crate::data_unit::{DataUnit, GenericDataUnit};
 pub use crate::data_unit::standard::{SystemStatus as DataSystemStatus, ComponentStatus as DataComponentStatus, AnalogValue as DataAnalogValue};
 
 // 信息对象
-pub use crate::info_object::{InfoObject, SystemStatus, ComponentStatus, AnalogValue, AnalogType as InfoAnalogType};
+pub use crate::info_object::{
+    InfoObject, SystemStatus, ComponentStatus, AnalogValue, AnalogType as InfoAnalogType,
+    FireSystemOperation, DeviceOperation, FireSystemVersion, DeviceVersion,
+    FireSystemConfig, ComponentConfig, DeviceConfig
+};
 
 // 扩展机制
 pub use crate::extension::{ExtensionDataUnit, ExtensionManager, ExtensionRegistry};
