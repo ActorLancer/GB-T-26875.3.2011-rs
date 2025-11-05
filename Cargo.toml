@@ -16,22 +16,22 @@ readme = "README.md"
 # 核心依赖
 bytes = "1"
 thiserror = "1"
-encoding_rs = { version = "0.8", optional = true }
+encoding_rs = "0.8"
 once_cell = "1"
 
 # 过程宏支持
-gb26875_macros = { path = "gb26875_macros", optional = true }
+gb26875_macros = { path = "gb26875_macros" }
 
 # 日志 facade（只依赖接口）
-log = { version = "0.4", optional = true }
+log = "0.4"
 
 # Serde 支持
-serde = { version = "1", features = ["derive"], optional = true }
-serde_json = { version = "1", optional = true }
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
 
 # 异步支持
-tokio = { version = "1", features = ["net", "io-util"], optional = true }
-tokio-util = { version = "0.7", features = ["codec"], optional = true }
+tokio = { version = "1", features = ["net", "io-util", "macros", "rt"] }
+tokio-util = { version = "0.7", features = ["codec"] }
 
 [dev-dependencies]
 # 测试
@@ -46,47 +46,6 @@ criterion = "0.5"
 name = "debug_packet"
 path = "src/bin/debug_packet.rs"
 
-[features]
-default = ["serde", "async", "logging", "encoding", "macros"]
-
-# 序列化支持
-serde = ["dep:serde", "dep:serde_json"]
-
-# 异步支持
-async = ["dep:tokio", "dep:tokio-util"]
-
-# 日志支持
-logging = ["dep:log"]
-
-# 字符串编码支持
-encoding = ["dep:encoding_rs"]
-
-# 扩展机制支持
-macros = ["dep:gb26875_macros"]
-
-# 完整功能
-full = ["serde", "async", "logging", "encoding", "macros"]
-
-# Examples will be added later
-# [[example]]
-# name = "tcp_server"
-# required-features = ["async"]
-
-# [[example]]
-# name = "tcp_client"
-# required-features = ["async"]
-
-# [[example]]
-# name = "logging_demo"
-# required-features = ["logging"]
-
-# Benchmarks will be added later
-# [[bench]]
-# name = "codec_bench"
-# harness = false
-
 [package.metadata.docs.rs]
-# 在 docs.rs 上构建时启用所有 features
-all-features = true
 # 设置文档中显示的目标平台
 targets = ["x86_64-unknown-linux-gnu"]

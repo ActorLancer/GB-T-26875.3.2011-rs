@@ -18,7 +18,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 /// - ...
 /// - 系统类型n（1字节）+ 系统地址n（1字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadSystemStatus {
     /// 查询的系统信息列表（系统类型+系统地址）
     pub systems: Vec<(SystemType, u8)>, // 系统地址为1字节
@@ -134,7 +134,7 @@ impl DataUnit for ReadSystemStatus {
 /// - ...
 /// - 系统类型n（1字节）+ 系统地址n（1字节）+ 部件地址n（4字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadComponentStatus {
     /// 查询的部件信息列表（系统类型+系统地址+部件地址）
     /// 部件地址为4字节，按协议规定包含部件类型和3字节地址
@@ -257,7 +257,7 @@ impl DataUnit for ReadComponentStatus {
 /// - ...
 /// - 系统类型n（1字节）+ 系统地址n（1字节）+ 部件地址n（4字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadAnalogValue {
     /// 查询的模拟量信息列表（系统类型+系统地址+部件地址）
     /// 部件地址为4字节，按协议规定包含部件类型和3字节地址
@@ -375,7 +375,7 @@ impl DataUnit for ReadAnalogValue {
 ///
 /// 用于同步设备时钟
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SyncDeviceClock {
     /// 目标时间
     pub target_time: Timestamp,
@@ -452,7 +452,7 @@ impl DataUnit for SyncDeviceClock {
 ///
 /// 用于查询设备状态
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct PatrolCommand;
 
 impl PatrolCommand {
@@ -519,7 +519,7 @@ impl DataUnit for PatrolCommand {
 ///
 /// 用于初始化设备
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct InitializeDevice;
 
 impl InitializeDevice {
@@ -589,7 +589,7 @@ impl DataUnit for InitializeDevice {
 /// - 信息对象数目（1字节）= 1
 /// - 系统类型1（1字节）+ 系统地址1（1字节）+ 查询操作信息记录数目（1字节）+ 查询记录的指定起始时间（6字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadOperationInfo {
     /// 系统类型
     pub system_type: SystemType,
@@ -729,7 +729,7 @@ impl DataUnit for ReadOperationInfo {
 /// - 信息对象数目（1字节）= 1
 /// - 系统类型1（1字节）+ 系统地址1（1字节）
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadSoftwareVersion {
     /// 系统类型
     pub system_type: SystemType,
@@ -816,7 +816,7 @@ impl DataUnit for ReadSoftwareVersion {
 /// - ...
 /// - 系统类型n（1字节）+ 系统地址n（1字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadSystemConfig {
     /// 查询的系统信息列表（系统类型+系统地址）
     pub systems: Vec<(SystemType, u8)>, // 系统地址为1字节
@@ -938,7 +938,7 @@ impl DataUnit for ReadSystemConfig {
 /// - ...
 /// - 系统类型n（1字节）+ 系统地址n（1字节）+ 部件地址n（4字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadComponentConfig {
     /// 查询的部件信息列表（系统类型+系统地址+部件地址）
     /// 部件地址为4字节，按协议规定包含部件类型和3字节地址
@@ -1066,7 +1066,7 @@ impl DataUnit for ReadComponentConfig {
 /// - 信息对象数目（1字节）= 1
 /// - 系统类型1（1字节）+ 系统地址1（1字节）
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadSystemTime {
     /// 系统类型
     pub system_type: SystemType,
@@ -1125,7 +1125,7 @@ impl DataUnit for ReadSystemTime {
 
 /// 读用户信息传输装置运行状态 (类型81)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadDeviceStatus;
 
 impl ReadDeviceStatus {
@@ -1187,7 +1187,7 @@ impl DataUnit for ReadDeviceStatus {
 ///
 /// 监控中心请求用户信息传输装置传送操作信息记录，并指定记录起始时间和信息数目
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadDeviceOperation {
     /// 查询操作信息记录数目（≤102）
     pub record_count: u8,
@@ -1280,7 +1280,7 @@ impl DataUnit for ReadDeviceOperation {
 
 /// 读用户信息传输装置软件版本 (类型85)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadDeviceVersion;
 
 impl ReadDeviceVersion {
@@ -1339,7 +1339,7 @@ impl DataUnit for ReadDeviceVersion {
 
 /// 读用户信息传输装置配置情况 (类型86)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadDeviceConfig;
 
 impl ReadDeviceConfig {
@@ -1399,7 +1399,7 @@ impl DataUnit for ReadDeviceConfig {
 
 /// 读用户信息传输装置系统时间 (类型88)
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ReadDeviceTime;
 
 impl ReadDeviceTime {
@@ -1457,7 +1457,6 @@ impl DataUnit for ReadDeviceTime {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::protocol::SystemType;

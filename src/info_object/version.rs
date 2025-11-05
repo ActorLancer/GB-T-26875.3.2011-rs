@@ -22,7 +22,7 @@ use bytes::Bytes;
 /// | 次版本号      | 1     | 软件次版本号       |
 /// | 版本信息时间   | 6     | 时间戳            |
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct FireSystemVersion {
     /// 系统类型标志 (1字节)
     pub system_type: SystemType,
@@ -124,7 +124,7 @@ impl InfoObject for FireSystemVersion {
 /// | 次版本号      | 1     | 软件次版本号       |
 /// | 版本信息时间   | 6     | 时间戳            |
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct DeviceVersion {
     /// 主版本号 (1字节)
     pub major_version: u8,
@@ -192,7 +192,6 @@ impl InfoObject for DeviceVersion {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::protocol::types::SystemType;

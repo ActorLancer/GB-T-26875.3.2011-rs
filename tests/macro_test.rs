@@ -1,9 +1,9 @@
 //! 过程宏基本功能测试
 
-#[cfg(feature = "macros")]
+
 use gb26875_macros::*;
 
-#[cfg(feature = "macros")]
+
 mod tests {
     use super::*;
     #[derive(Command)]

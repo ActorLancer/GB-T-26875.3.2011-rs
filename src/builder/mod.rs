@@ -51,7 +51,6 @@ pub trait ResettableBuilder<T>: Builder<T> + Clone {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::error::EncodeError;

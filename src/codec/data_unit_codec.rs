@@ -8,7 +8,7 @@ use crate::protocol::DataUnitType;
 use bytes::{BufMut, Bytes, BytesMut};
 
 // 扩展机制支持
-#[cfg(feature = "macros")]
+
 use crate::extension::MacroExtensionManager;
 
 /// 数据单元编解码器
@@ -75,17 +75,7 @@ impl DataUnitCodec {
 
         // 检查是否为扩展类型（128-254）
         if self.enable_extensions && data[0] >= 128 && data[0] <= 254 {
-            #[cfg(feature = "macros")]
-            {
-                return self.decode_extension_data_unit(data[0], content);
-            }
-            #[cfg(not(feature = "macros"))]
-            {
-                return Err(ParseError::UnsupportedDataUnit {
-                    data_unit_type: data[0],
-                    reason: "Extension support not compiled".to_string(),
-                });
-            }
+            return self.decode_extension_data_unit(data[0], content);
         }
 
         // 解析标准数据单元
@@ -100,7 +90,7 @@ impl DataUnitCodec {
     ///
     /// # Returns
     /// * `ParseResult<GenericDataUnit>` - 成功返回通用数据单元包装的扩展
-    #[cfg(feature = "macros")]
+    
     fn decode_extension_data_unit(&self, type_code: u8, content: &[u8]) -> ParseResult<GenericDataUnit> {
         // 从全局注册表查找数据单元扩展
         let manager = MacroExtensionManager::global();
@@ -129,7 +119,7 @@ impl DataUnitCodec {
     ///
     /// # Returns
     /// * `EncodeResult<Bytes>` - 编码结果
-    #[cfg(feature = "macros")]
+    
     pub fn encode_extension_data_unit(&self, type_code: u8, extension_data: &Bytes) -> EncodeResult<Bytes> {
         let manager = MacroExtensionManager::global();
         
@@ -220,17 +210,10 @@ impl DataUnitCodec {
             return true;
         }
 
-        // 扩展类型需要检查注册表
+        // 检查是否为扩展类型（128-254）
         if self.enable_extensions && type_code >= 128 && type_code <= 254 {
-            #[cfg(feature = "macros")]
-            {
-                let manager = MacroExtensionManager::global();
-                return manager.find_data_unit(type_code).is_some();
-            }
-            #[cfg(not(feature = "macros"))]
-            {
-                return false;
-            }
+            let manager = MacroExtensionManager::global();
+            return manager.find_data_unit(type_code).is_some();
         }
 
         false
@@ -240,7 +223,7 @@ impl DataUnitCodec {
     ///
     /// # Returns
     /// * `Vec<u8>` - 支持的扩展类型代码列表
-    #[cfg(feature = "macros")]
+    
     pub fn list_extension_data_unit_types(&self) -> Vec<u8> {
         if !self.enable_extensions {
             return Vec::new();
@@ -262,7 +245,7 @@ impl DataUnitCodec {
     ///
     /// # Returns
     /// * `Option<String>` - 描述信息，如果找不到则返回 None
-    #[cfg(feature = "macros")]
+    
     pub fn get_extension_description(&self, type_code: u8) -> Option<String> {
         if !self.enable_extensions {
             return None;
@@ -284,7 +267,6 @@ impl super::traits::Codec<GenericDataUnit> for DataUnitCodec {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::super::traits::Codec;
     use super::*;

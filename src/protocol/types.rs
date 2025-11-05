@@ -4,7 +4,7 @@
 
 /// 系统类型定义
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum SystemType {
     /// 通用
@@ -132,7 +132,7 @@ impl SystemType {
 
 /// 部件类型定义
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum ComponentType {
     /// 通用
@@ -435,7 +435,7 @@ impl ComponentType {
 
 /// 模拟量类型定义
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum AnalogType {
     /// 未用
@@ -605,7 +605,7 @@ impl AnalogType {
 
 /// 数据单元类型标志
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum DataUnitType {
     /// 预留

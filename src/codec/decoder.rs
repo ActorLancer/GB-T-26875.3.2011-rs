@@ -245,7 +245,6 @@ impl DecoderTrait<GenericDataUnit> for Decoder {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

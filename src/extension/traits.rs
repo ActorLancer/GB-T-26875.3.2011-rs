@@ -75,7 +75,7 @@ pub trait CloneableExtensionDataUnit: ExtensionDataUnit {
 /// 可序列化的扩展数据单元 trait
 ///
 /// 为需要序列化功能的扩展数据单元提供额外支持
-#[cfg(feature = "serde")]
+
 pub trait SerializableExtensionDataUnit: ExtensionDataUnit {
     /// 序列化为 JSON
     ///
@@ -314,7 +314,6 @@ pub fn downcast_cloneable_extension<T: CloneableExtensionDataUnit + 'static>(
     extension.as_any().downcast_ref::<T>()
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

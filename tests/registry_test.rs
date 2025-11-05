@@ -2,48 +2,48 @@
 //!
 //! 测试 Phase 4.1.2 增强的注册表和命名空间冲突解决功能
 
-#[cfg(feature = "macros")]
+
 use gb26875::extension::{
     MacroExtensionManager, ExtensionId,
     CommandExtension, DataUnitExtension, SystemTypeExtension, ComponentTypeExtension, AnalogTypeExtension,
 };
 
-#[cfg(feature = "macros")]
+
 use gb26875_macros::{Command, DataUnit, SystemType, ComponentType, AnalogType};
 
-#[cfg(feature = "macros")]
+
 #[derive(Command)]
 #[gb26875(code = 150, description = "测试命令150")]
 struct TestCommand150;
 
-#[cfg(feature = "macros")]
+
 #[derive(Command)]
 #[gb26875(code = 151, description = "测试命令151")]
 struct TestCommand151;
 
-#[cfg(feature = "macros")]
+
 #[derive(DataUnit, Debug, Clone)]
 #[gb26875(type_flag = 200, description = "测试数据单元200")]
 struct TestDataUnit200 {
     value: u32,
 }
 
-#[cfg(feature = "macros")]
+
 #[derive(SystemType)]
 #[gb26875(code = 200, description = "测试系统类型200")]
 struct TestSystemType200;
 
-#[cfg(feature = "macros")]
+
 #[derive(ComponentType)]
 #[gb26875(code = 220, description = "测试部件类型220")]
 struct TestComponentType220;
 
-#[cfg(feature = "macros")]
+
 #[derive(AnalogType)]
 #[gb26875(code = 230, description = "测试模拟量类型230", range = "-100.0..100.0", unit = "°C")]
 struct TestAnalogType230;
 
-#[cfg(feature = "macros")]
+
 mod tests {
     use super::*;
 

@@ -259,7 +259,6 @@ pub enum BufferError {
     },
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

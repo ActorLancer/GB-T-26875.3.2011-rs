@@ -43,8 +43,8 @@ pub use crate::info_object::{
 pub use crate::extension::{ExtensionDataUnit, ExtensionManager, ExtensionRegistry};
 
 // 条件导入
-#[cfg(feature = "serde")]
+
 pub use serde::{Deserialize, Serialize};
 
-#[cfg(feature = "async")]
+
 pub use crate::codec::framed::{GB26875FramedCodec, LengthFieldCodec, StreamProcessor};

@@ -9,7 +9,7 @@ pub mod encoder;
 pub mod packet_codec;
 pub mod traits;
 
-#[cfg(feature = "async")]
+
 pub mod framed;
 
 // 重新导出主要类型
@@ -19,5 +19,5 @@ pub use encoder::{Encoder, EncoderConfig};
 pub use packet_codec::PacketCodec;
 pub use traits::{Codec, Decoder as DecoderTrait, Encoder as EncoderTrait, StreamCodec};
 
-#[cfg(feature = "async")]
+
 pub use framed::{GB26875FramedCodec, LengthFieldCodec, StreamProcessor, StreamStats};

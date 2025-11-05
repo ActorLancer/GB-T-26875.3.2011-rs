@@ -392,7 +392,6 @@ impl Default for PacketBuilder {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::info_object::SystemStatus;

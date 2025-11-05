@@ -583,7 +583,6 @@ impl Clone for GenericDataUnit {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

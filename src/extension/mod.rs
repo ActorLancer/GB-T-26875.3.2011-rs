@@ -10,7 +10,6 @@ pub use registry::*;
 pub use traits::*;
 
 use crate::data_unit::GenericDataUnit;
-#[cfg(test)]
 use crate::error::ParseError;
 use crate::error::ParseResult;
 use crate::protocol::DataUnitType;
@@ -57,7 +56,6 @@ pub struct ExtensionRegistryStats {
 /// 过程宏扩展注册表
 ///
 /// 支持编译时生成的扩展类型注册
-#[cfg(feature = "macros")]
 pub struct MacroExtensionRegistry {
     /// 命令扩展注册表
     pub command_extensions: RwLock<HashMap<u8, Box<dyn CommandExtension>>>,
@@ -73,7 +71,7 @@ pub struct MacroExtensionRegistry {
     pub extension_id_registry: RwLock<HashMap<ExtensionId, u8>>,
 }
 
-#[cfg(feature = "macros")]
+
 impl MacroExtensionRegistry {
     /// 创建新的过程宏扩展注册表
     pub fn new() -> Self {
@@ -123,7 +121,7 @@ impl MacroExtensionRegistry {
             .map_err(|_| ExtensionError::RegistryLockError)?;
         commands.insert(code, extension);
 
-        #[cfg(feature = "logging")]
+        
         log::info!("注册命令扩展: 代码={}", code);
 
         Ok(())
@@ -165,7 +163,7 @@ impl MacroExtensionRegistry {
             .map_err(|_| ExtensionError::RegistryLockError)?;
         data_units.insert(type_flag, extension);
 
-        #[cfg(feature = "logging")]
+        
         log::info!("注册数据单元扩展: 类型标志={}", type_flag);
 
         Ok(())
@@ -207,7 +205,7 @@ impl MacroExtensionRegistry {
             .map_err(|_| ExtensionError::RegistryLockError)?;
         systems.insert(code, extension);
 
-        #[cfg(feature = "logging")]
+        
         log::info!("注册系统类型扩展: 代码={}", code);
 
         Ok(())
@@ -249,7 +247,7 @@ impl MacroExtensionRegistry {
             .map_err(|_| ExtensionError::RegistryLockError)?;
         components.insert(code, extension);
 
-        #[cfg(feature = "logging")]
+        
         log::info!("注册部件类型扩展: 代码={}", code);
 
         Ok(())
@@ -291,7 +289,7 @@ impl MacroExtensionRegistry {
             .map_err(|_| ExtensionError::RegistryLockError)?;
         analogs.insert(code, extension);
 
-        #[cfg(feature = "logging")]
+        
         log::info!("注册模拟量类型扩展: 代码={}", code);
 
         Ok(())
@@ -532,7 +530,7 @@ impl MacroExtensionRegistry {
             analogs.clear();
         }
 
-        #[cfg(feature = "logging")]
+        
         log::info!("已清空所有过程宏扩展注册");
 
         Ok(())
@@ -577,7 +575,7 @@ impl MacroExtensionRegistry {
     }
 }
 
-#[cfg(feature = "macros")]
+
 impl Default for MacroExtensionRegistry {
     fn default() -> Self {
         Self::new()
@@ -585,15 +583,15 @@ impl Default for MacroExtensionRegistry {
 }
 
 /// 全局过程宏扩展注册表实例
-#[cfg(feature = "macros")]
+
 static MACRO_EXTENSION_REGISTRY: once_cell::sync::Lazy<MacroExtensionRegistry> =
     once_cell::sync::Lazy::new(|| MacroExtensionRegistry::new());
 
 /// 全局过程宏扩展管理器
-#[cfg(feature = "macros")]
+
 pub struct MacroExtensionManager;
 
-#[cfg(feature = "macros")]
+
 impl MacroExtensionManager {
     /// 获取全局扩展注册表的引用
     pub fn global() -> &'static MacroExtensionRegistry {
@@ -913,7 +911,7 @@ impl ExtensionRegistry {
         self.factories.insert(type_id, factory);
         self.type_names.insert(type_id, name);
 
-        #[cfg(feature = "logging")]
+        
         log::debug!(
             "注册扩展类型: ID={}, 名称={}",
             type_id,
@@ -934,10 +932,10 @@ impl ExtensionRegistry {
         if self.factories.remove(&type_id).is_none() {
             return Err(ExtensionError::NotFound { type_id });
         }
-        #[cfg(feature = "logging")]
+        
         let type_name = self.type_names.remove(&type_id);
 
-        #[cfg(feature = "logging")]
+        
         log::debug!("解注册扩展类型: ID={}, 名称={:?}", type_id, type_name);
 
         Ok(())
@@ -1003,7 +1001,7 @@ impl ExtensionRegistry {
         self.factories.clear();
         self.type_names.clear();
 
-        #[cfg(feature = "logging")]
+        
         log::debug!("清空所有扩展类型注册");
     }
 
@@ -1180,7 +1178,6 @@ macro_rules! register_extension {
     };
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::extension::traits::{ExtensionDataUnit, ExtensionResult};

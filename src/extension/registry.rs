@@ -133,7 +133,7 @@ impl ThreadSafeExtensionRegistry {
         inner.factories.insert(type_id, factory);
         inner.type_infos.insert(type_id, type_info);
 
-        #[cfg(feature = "logging")]
+        
         log::info!(
             "注册扩展类型: ID={}, 名称={}",
             type_id,
@@ -167,7 +167,7 @@ impl ThreadSafeExtensionRegistry {
             });
         }
 
-        #[cfg(feature = "logging")]
+        
         if let Some(info) = _type_info {
             log::info!("解注册扩展类型: ID={}, 名称={}", type_id, info.name);
         }
@@ -293,12 +293,12 @@ impl ThreadSafeExtensionRegistry {
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表写锁".to_string(),
             })?;
-        #[cfg(feature = "logging")]
+        
         let count = inner.factories.len();
         inner.factories.clear();
         inner.type_infos.clear();
 
-        #[cfg(feature = "logging")]
+        
         log::info!("清空扩展注册表，共移除 {} 个类型", count);
 
         Ok(())
@@ -454,7 +454,6 @@ impl Default for ExtensionRegistryBuilder {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::extension::traits::ExtensionDataUnit;

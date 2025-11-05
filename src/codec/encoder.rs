@@ -191,7 +191,6 @@ impl EncoderTrait<GenericDataUnit> for Encoder {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

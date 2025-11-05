@@ -7,7 +7,7 @@ use crate::frame::Packet;
 use bytes::{BufMut, Bytes, BytesMut};
 use std::io;
 
-#[cfg(feature = "async")]
+
 use tokio_util::codec::{Decoder, Encoder};
 
 /// GB26875 Framed Codec
@@ -99,7 +99,7 @@ impl Default for GB26875FramedCodec {
     }
 }
 
-#[cfg(feature = "async")]
+
 impl Decoder for GB26875FramedCodec {
     type Item = Packet;
     type Error = io::Error;
@@ -130,7 +130,7 @@ impl Decoder for GB26875FramedCodec {
     }
 }
 
-#[cfg(feature = "async")]
+
 impl Encoder<Packet> for GB26875FramedCodec {
     type Error = io::Error;
 
@@ -245,7 +245,7 @@ impl LengthFieldCodec {
     }
 }
 
-#[cfg(feature = "async")]
+
 impl Decoder for LengthFieldCodec {
     type Item = Bytes;
     type Error = io::Error;
@@ -390,7 +390,6 @@ pub struct StreamStats {
     pub buffer_size: usize,
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::frame::{ControlUnit, Timestamp};
@@ -457,7 +456,6 @@ mod tests {
         assert_eq!(stats.bytes_processed, 0);
     }
 
-    #[cfg(feature = "async")]
     #[tokio::test]
     async fn test_framed_codec_encode() {
         use tokio_util::codec::Encoder;

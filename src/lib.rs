@@ -93,11 +93,11 @@ pub mod parser;
 pub mod protocol;
 
 // 可选模块
-#[cfg(feature = "serde")]
+
 #[cfg_attr(docsrs, doc(cfg(feature = "serde")))]
 pub mod serde;
 
-#[cfg(feature = "async")]
+
 #[cfg_attr(docsrs, doc(cfg(feature = "async")))]
 pub mod transport;
 

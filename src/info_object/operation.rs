@@ -22,7 +22,7 @@ use bytes::Bytes;
 /// | 操作员编号    | 1     | 操作员编号        |
 /// | 操作发生时间   | 6     | 时间戳            |
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct FireSystemOperation {
     /// 系统类型标志 (1字节)
     pub system_type: SystemType,
@@ -161,7 +161,7 @@ impl InfoObject for FireSystemOperation {
 /// | 操作员编号    | 1     | 操作员编号        |
 /// | 操作发生时间   | 6     | 时间戳            |
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct DeviceOperation {
     /// 操作标志 (1字节)
     pub operation_flags: u8,
@@ -270,7 +270,6 @@ impl InfoObject for DeviceOperation {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::protocol::types::SystemType;

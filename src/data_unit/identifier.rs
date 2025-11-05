@@ -13,7 +13,7 @@ use crate::protocol::DataUnitType;
 ///
 /// 包含数据单元类型标识和相关的解析功能
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct DataUnitIdentifier {
     /// 数据单元类型
     pub data_unit_type: DataUnitType,
@@ -163,7 +163,6 @@ impl DataUnitIdentifierParser {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

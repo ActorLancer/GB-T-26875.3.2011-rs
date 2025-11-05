@@ -6,7 +6,7 @@ use crate::error::{ParseError, ParseResult};
 
 /// GB26875 时间标签（6字节）
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Timestamp {
     /// 秒 (0-59)
     pub second: u8,
@@ -346,7 +346,6 @@ impl std::fmt::Display for Timestamp {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

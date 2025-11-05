@@ -206,7 +206,6 @@ impl Default for DataValidator {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::frame::{ControlUnit, Packet, Timestamp};

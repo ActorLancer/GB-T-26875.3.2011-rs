@@ -202,7 +202,6 @@ impl Default for FrameDetector {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::frame::{ControlUnit, Packet, Timestamp};

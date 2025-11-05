@@ -2,23 +2,16 @@
 //! 
 //! 展示如何使用过程宏定义自定义扩展类型
 
-#[cfg(not(feature = "macros"))]
-fn main() {
-    println!("需要启用 'macros' 特性才能运行此示例。");
-    println!("使用命令: cargo run --example extension_demo --features macros");
-}
-
-#[cfg(feature = "macros")]
 use gb26875_macros::*;
 
 // 定义自定义命令类型
-#[cfg(feature = "macros")]
+
 #[derive(Command)]
 #[gb26875(code = 128, description = "自定义设备登录命令")]
 pub struct CustomLogin;
 
 // 定义自定义数据单元类型
-#[cfg(feature = "macros")]
+
 #[derive(DataUnit)]
 #[gb26875(type_flag = 128, description = "自定义报警数据单元")]
 pub struct CustomAlarm {
@@ -27,7 +20,7 @@ pub struct CustomAlarm {
     pub message: String,
 }
 
-#[cfg(feature = "macros")]
+
 impl Default for CustomAlarm {
     fn default() -> Self {
         Self {
@@ -38,7 +31,7 @@ impl Default for CustomAlarm {
     }
 }
 
-#[cfg(feature = "macros")]
+
 impl Clone for CustomAlarm {
     fn clone(&self) -> Self {
         Self {
@@ -49,7 +42,7 @@ impl Clone for CustomAlarm {
     }
 }
 
-#[cfg(feature = "macros")]
+
 impl std::fmt::Debug for CustomAlarm {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("CustomAlarm")
@@ -61,12 +54,12 @@ impl std::fmt::Debug for CustomAlarm {
 }
 
 // 定义自定义模拟量类型
-#[cfg(feature = "macros")]
+
 #[derive(AnalogType)]
 #[gb26875(code = 128, range = "-40..85", unit = "°C")]
 pub struct Temperature;
 
-#[cfg(feature = "macros")]
+
 fn main() {
     println!("GB26875 扩展机制示例");
     

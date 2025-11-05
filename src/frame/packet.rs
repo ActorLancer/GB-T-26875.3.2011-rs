@@ -8,7 +8,7 @@ use crate::frame::{calculate_checksum, ControlUnit};
 use crate::protocol::constants::*;
 use bytes::{BufMut, Bytes, BytesMut};
 
-#[cfg(feature = "serde")]
+
 mod bytes_serde {
     use bytes::Bytes;
     use serde::{Deserialize, Deserializer, Serialize, Serializer};
@@ -41,12 +41,12 @@ mod bytes_serde {
 /// - 校验和（1字节）
 /// - 结束符（2字节）: 0x23 0x23
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct Packet {
     /// 控制单元（25字节）
     pub control_unit: ControlUnit,
     /// 应用数据单元（可选）
-    #[cfg_attr(feature = "serde", serde(with = "bytes_serde", skip_serializing_if = "Option::is_none"))]
+    #[serde(with = "bytes_serde", skip_serializing_if = "Option::is_none")]
     pub data_unit: Option<Bytes>,
 }
 
@@ -587,7 +587,6 @@ impl std::fmt::Display for Packet {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::frame::Timestamp;

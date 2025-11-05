@@ -81,7 +81,6 @@ where
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use bytes::Bytes;

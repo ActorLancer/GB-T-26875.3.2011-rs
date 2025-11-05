@@ -100,7 +100,6 @@ pub fn simple_checksum(bytes: &[u8]) -> u8 {
     (sum & 0xFF) as u8
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

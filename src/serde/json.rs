@@ -2,22 +2,22 @@
 //!
 //! 提供数据包和数据单元的 JSON 序列化功能
 
-#[cfg(feature = "serde")]
+
 use crate::{
     data_unit::GenericDataUnit,
     error::{EncodeError, ParseError},
     frame::Packet,
 };
 
-#[cfg(feature = "serde")]
+
 use serde_json;
 
 /// JSON 序列化器
-#[cfg(feature = "serde")]
+
 #[derive(Debug, Clone, Default)]
 pub struct JsonSerializer;
 
-#[cfg(feature = "serde")]
+
 impl JsonSerializer {
     /// 创建新的 JSON 序列化器
     pub fn new() -> Self {
@@ -118,8 +118,7 @@ impl JsonSerializer {
     }
 }
 
-#[cfg(test)]
-#[cfg(feature = "serde")]
+
 mod tests {
     // TODO: 需要修复测试以适应新的 API
     /*

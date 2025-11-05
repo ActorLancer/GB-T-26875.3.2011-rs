@@ -36,7 +36,7 @@ use bytes::Bytes;
 /// );
 /// ```
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct SystemStatus {
     /// 系统类型标志 (1字节)
     pub system_type: SystemType,
@@ -114,7 +114,6 @@ impl InfoObject for SystemStatus {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::protocol::types::SystemType;

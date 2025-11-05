@@ -337,7 +337,6 @@ macro_rules! impl_custom_data_unit_factory {
     };
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::protocol::DataUnitType;

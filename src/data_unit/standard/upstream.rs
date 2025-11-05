@@ -14,7 +14,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 ///
 /// 包含系统状态信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadSystemStatus {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -123,7 +123,7 @@ impl DataUnit for UploadSystemStatus {
 ///
 /// 包含部件状态信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadComponentStatus {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -234,7 +234,7 @@ impl DataUnit for UploadComponentStatus {
 ///
 /// 包含模拟量值信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadAnalogValue {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -341,7 +341,7 @@ impl DataUnit for UploadAnalogValue {
 ///
 /// 包含操作信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadOperationInfo {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -452,7 +452,7 @@ impl DataUnit for UploadOperationInfo {
 ///
 /// 包含软件版本信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadSoftwareVersion {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -559,7 +559,7 @@ impl DataUnit for UploadSoftwareVersion {
 ///
 /// 包含系统配置信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadSystemConfig {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -668,7 +668,7 @@ impl DataUnit for UploadSystemConfig {
 ///
 /// 包含部件配置信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadComponentConfig {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -775,7 +775,7 @@ impl DataUnit for UploadComponentConfig {
 ///
 /// 包含系统时间信息
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadSystemTime {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -882,7 +882,7 @@ impl DataUnit for UploadSystemTime {
 ///
 /// 包含设备运行状态信息
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadDeviceStatus {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -988,7 +988,7 @@ impl DataUnit for UploadDeviceStatus {
 ///
 /// 包含设备操作信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadDeviceOperation {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -1095,7 +1095,7 @@ impl DataUnit for UploadDeviceOperation {
 ///
 /// 包含设备软件版本信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadDeviceVersion {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -1202,7 +1202,7 @@ impl DataUnit for UploadDeviceVersion {
 ///
 /// 包含设备配置信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadDeviceConfig {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -1309,7 +1309,7 @@ impl DataUnit for UploadDeviceConfig {
 ///
 /// 包含设备系统时间信息
 #[derive(Debug, Clone, PartialEq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct UploadDeviceTime {
     /// 信息对象数量 (固定为1)
     pub object_count: u8,
@@ -1415,7 +1415,6 @@ impl DataUnit for UploadDeviceTime {
 // TODO: 继续实现其余的上行数据单元类型 (2-28)
 // 当前专注于建立可工作的基础架构
 
-#[cfg(test)]
 mod tests {
     use super::*;
     use crate::protocol::types::SystemType;

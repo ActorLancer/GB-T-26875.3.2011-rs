@@ -9,7 +9,7 @@ use crate::protocol::{Command, ProtocolVersion};
 
 /// GB26875 控制单元（25字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ControlUnit {
     /// 业务流水号（2字节，小端序）
     pub sequence: u16,
@@ -285,7 +285,6 @@ impl std::fmt::Display for ControlUnit {
     }
 }
 
-#[cfg(test)]
 mod tests {
     use super::*;
 

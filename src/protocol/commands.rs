@@ -4,7 +4,7 @@
 
 /// 控制单元命令字节定义
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 #[repr(u8)]
 pub enum Command {
     /// 预留
@@ -124,7 +124,7 @@ impl Command {
 
 /// 协议版本
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
+#[derive(serde::Serialize, serde::Deserialize)]
 pub struct ProtocolVersion {
     /// 主版本号（固定为1）
     pub major: u8,
