@@ -47,4 +47,4 @@ pub use crate::extension::{ExtensionDataUnit, ExtensionManager, ExtensionRegistr
 pub use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "async")]
-pub use crate::codec::{AsyncDataUnitCodec, AsyncPacketCodec};
+pub use crate::codec::framed::{GB26875FramedCodec, LengthFieldCodec, StreamProcessor};

@@ -22,6 +22,7 @@ use bytes::Bytes;
 /// | 配置说明        | L(最多255) | 配置说明(GB18030编码)      |
 /// | 配置时间        | 6         | 时间戳                   |
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct FireSystemConfig {
     /// 系统类型标志 (1字节)
     pub system_type: SystemType,
@@ -150,6 +151,7 @@ impl InfoObject for FireSystemConfig {
 /// | 部件说明      | 31    | 部件说明(GB18030编码)      |
 /// | 配置时间      | 6     | 时间戳                   |
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct ComponentConfig {
     /// 系统类型标志 (1字节)
     pub system_type: SystemType,
@@ -272,6 +274,7 @@ impl InfoObject for ComponentConfig {
 /// | 设备说明        | L(最多255) | 设备说明(GB18030编码)      |
 /// | 配置时间        | 6         | 时间戳                   |
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct DeviceConfig {
     /// 设备配置说明 (最多255字节，GB18030编码)
     pub device_description: Vec<u8>,

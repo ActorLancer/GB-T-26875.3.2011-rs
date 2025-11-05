@@ -8,6 +8,30 @@ use crate::frame::{calculate_checksum, ControlUnit};
 use crate::protocol::constants::*;
 use bytes::{BufMut, Bytes, BytesMut};
 
+#[cfg(feature = "serde")]
+mod bytes_serde {
+    use bytes::Bytes;
+    use serde::{Deserialize, Deserializer, Serialize, Serializer};
+
+    pub fn serialize<S>(bytes: &Option<Bytes>, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: Serializer,
+    {
+        match bytes {
+            Some(b) => b.as_ref().serialize(serializer),
+            None => serializer.serialize_none(),
+        }
+    }
+
+    pub fn deserialize<'de, D>(deserializer: D) -> Result<Option<Bytes>, D::Error>
+    where
+        D: Deserializer<'de>,
+    {
+        let vec: Option<Vec<u8>> = Option::deserialize(deserializer)?;
+        Ok(vec.map(Bytes::from))
+    }
+}
+
 /// GB26875 数据包
 ///
 /// 完整的GB26875 协议数据包结构：
@@ -22,6 +46,7 @@ pub struct Packet {
     /// 控制单元（25字节）
     pub control_unit: ControlUnit,
     /// 应用数据单元（可选）
+    #[cfg_attr(feature = "serde", serde(with = "bytes_serde", skip_serializing_if = "Option::is_none"))]
     pub data_unit: Option<Bytes>,
 }
 

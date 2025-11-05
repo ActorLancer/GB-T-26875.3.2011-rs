@@ -168,7 +168,7 @@ impl ThreadSafeExtensionRegistry {
         }
 
         #[cfg(feature = "logging")]
-        if let Some(info) = type_info {
+        if let Some(info) = _type_info {
             log::info!("解注册扩展类型: ID={}, 名称={}", type_id, info.name);
         }
 

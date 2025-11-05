@@ -595,6 +595,11 @@ pub struct MacroExtensionManager;
 
 #[cfg(feature = "macros")]
 impl MacroExtensionManager {
+    /// 获取全局扩展注册表的引用
+    pub fn global() -> &'static MacroExtensionRegistry {
+        &MACRO_EXTENSION_REGISTRY
+    }
+
     /// 注册命令扩展到全局注册表
     pub fn register_command_global(extension: Box<dyn CommandExtension>) -> ExtensionResult<()> {
         MACRO_EXTENSION_REGISTRY.register_command(extension)

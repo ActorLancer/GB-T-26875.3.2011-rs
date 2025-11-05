@@ -214,6 +214,42 @@ pub enum ParseError {
     /// 自定义错误（用于扩展）
     #[error("Custom error: {0}")]
     Custom(String),
+
+    /// 扩展错误
+    #[error("Extension error: type {extension_type}, code {code}: {error}")]
+    ExtensionError {
+        /// 扩展类型
+        extension_type: String,
+        /// 扩展代码
+        code: u8,
+        /// 错误信息
+        error: String,
+    },
+
+    /// 不支持的数据单元类型
+    #[error("Unsupported data unit: type {data_unit_type} - {reason}")]
+    UnsupportedDataUnit {
+        /// 数据单元类型
+        data_unit_type: u8,
+        /// 错误原因
+        reason: String,
+    },
+
+    /// 帧太大
+    #[error("Frame too large: {size} bytes (max: {max_size})")]
+    FrameTooLarge {
+        /// 实际大小
+        size: usize,
+        /// 最大允许大小
+        max_size: usize,
+    },
+
+    /// 无效的长度字段大小
+    #[error("Invalid length field size: {size} (expected between 1 and 4)")]
+    InvalidLengthFieldSize {
+        /// 实际大小
+        size: usize,
+    },
 }
 
 /// 编码错误
@@ -263,7 +299,7 @@ pub enum EncodeError {
 
     /// 序列化错误
     #[error("Serialization error: {message}")]
-    Serialization {
+    SerializationError {
         /// 错误消息
         message: String,
     },
@@ -281,6 +317,26 @@ pub enum EncodeError {
     /// IO错误（用于async支持）
     #[error("IO error: {0}")]
     Io(#[from] std::io::Error),
+
+    /// 扩展错误
+    #[error("Extension error: type {extension_type}, code {code}: {error}")]
+    ExtensionError {
+        /// 扩展类型
+        extension_type: String,
+        /// 扩展代码
+        code: u8,
+        /// 错误信息
+        error: String,
+    },
+
+    /// 不支持的数据单元类型
+    #[error("Unsupported data unit: type {data_unit_type} - {reason}")]
+    UnsupportedDataUnit {
+        /// 数据单元类型
+        data_unit_type: u8,
+        /// 错误原因
+        reason: String,
+    },
 }
 
 /// 扩展错误

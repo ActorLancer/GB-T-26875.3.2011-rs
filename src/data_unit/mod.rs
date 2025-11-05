@@ -57,7 +57,6 @@ pub trait DataUnit: std::fmt::Debug + Send + Sync {
 /// 用于处理已知和未知类型的数据单元，支持运行时类型识别
 /// 和动态分发。支持标准数据单元和自定义数据单元的统一处理。
 #[derive(Debug)]
-#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub enum GenericDataUnit {
     /// 上行数据单元 - 上传建筑消防设施系统状态 (类型1)
     UploadSystemStatus(standard::upstream::UploadSystemStatus),
@@ -148,12 +147,30 @@ pub enum GenericDataUnit {
     /// 自定义数据单元 (类型128-254)
     Custom(Box<dyn CustomDataUnit>),
 
+    /// 扩展数据单元 (类型128-254，使用过程宏注册)
+    Extension {
+        /// 类型代码
+        type_code: u8,
+        /// 扩展数据
+        data: Bytes,
+        /// 描述信息
+        description: String,
+    },
+
     /// 未知或无法解析的原始数据
     Raw {
         /// 数据单元类型
         data_type: DataUnitType,
         /// 原始字节数据
         data: Bytes,
+    },
+
+    /// 未知数据单元类型
+    Unknown {
+        /// 数据单元类型
+        data_unit_type: DataUnitType,
+        /// 原始字节数据
+        raw_data: Vec<u8>,
     },
 }
 
@@ -299,6 +316,20 @@ impl GenericDataUnit {
         }
     }
 
+    /// 从数据单元类型和内容解析通用数据单元
+    ///
+    /// 这是对`from_raw`方法的别名，提供与codec模块的兼容性
+    ///
+    /// # Arguments
+    /// * `data_type` - 数据单元类型
+    /// * `content` - 数据内容（不包含类型标识符）
+    ///
+    /// # Returns
+    /// * `Result<GenericDataUnit, ParseError>` - 成功返回解析的数据单元
+    pub fn parse_from_type_and_content(data_type: DataUnitType, content: &[u8]) -> ParseResult<Self> {
+        Self::from_raw(data_type, content)
+    }
+
     /// 获取数据单元类型
     pub fn data_unit_type(&self) -> DataUnitType {
         match self {
@@ -332,7 +363,9 @@ impl GenericDataUnit {
             GenericDataUnit::SyncDeviceClock(unit) => unit.data_unit_type(),
             GenericDataUnit::PatrolCommand(unit) => unit.data_unit_type(),
             GenericDataUnit::Custom(unit) => unit.data_unit_type(),
+            GenericDataUnit::Extension { type_code, .. } => DataUnitType::UserDefined(*type_code),
             GenericDataUnit::Raw { data_type, .. } => *data_type,
+            GenericDataUnit::Unknown { data_unit_type, .. } => *data_unit_type,
         }
     }
 
@@ -369,7 +402,9 @@ impl GenericDataUnit {
             GenericDataUnit::SyncDeviceClock(unit) => unit.encode(),
             GenericDataUnit::PatrolCommand(unit) => unit.encode(),
             GenericDataUnit::Custom(unit) => unit.encode(),
+            GenericDataUnit::Extension { data, .. } => Ok(data.clone()),
             GenericDataUnit::Raw { data, .. } => Ok(data.clone()),
+            GenericDataUnit::Unknown { raw_data, .. } => Ok(Bytes::copy_from_slice(raw_data)),
         }
     }
 
@@ -406,7 +441,9 @@ impl GenericDataUnit {
             GenericDataUnit::SyncDeviceClock(unit) => unit.validate(),
             GenericDataUnit::PatrolCommand(unit) => unit.validate(),
             GenericDataUnit::Custom(unit) => unit.validate(),
+            GenericDataUnit::Extension { .. } => Ok(()), // 扩展数据单元在注册时已验证
             GenericDataUnit::Raw { .. } => Ok(()), // 原始数据无需特殊验证
+            GenericDataUnit::Unknown { .. } => Ok(()), // 未知数据无需验证
         }
     }
 
@@ -529,9 +566,18 @@ impl Clone for GenericDataUnit {
             }
             GenericDataUnit::PatrolCommand(unit) => GenericDataUnit::PatrolCommand(*unit),
             GenericDataUnit::Custom(unit) => GenericDataUnit::Custom(unit.clone_box()),
+            GenericDataUnit::Extension { type_code, data, description } => GenericDataUnit::Extension {
+                type_code: *type_code,
+                data: data.clone(),
+                description: description.clone(),
+            },
             GenericDataUnit::Raw { data_type, data } => GenericDataUnit::Raw {
                 data_type: *data_type,
                 data: data.clone(),
+            },
+            GenericDataUnit::Unknown { data_unit_type, raw_data } => GenericDataUnit::Unknown {
+                data_unit_type: *data_unit_type,
+                raw_data: raw_data.clone(),
             },
         }
     }

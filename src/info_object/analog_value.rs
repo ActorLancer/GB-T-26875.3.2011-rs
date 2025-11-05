@@ -12,6 +12,7 @@ use bytes::Bytes;
 ///
 /// 根据GB26875协议8.2.1节定义的标准模拟量类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 #[repr(u8)]
 pub enum AnalogType {
     /// 未用
@@ -98,6 +99,7 @@ impl AnalogType {
 /// );
 /// ```
 #[derive(Debug, Clone, PartialEq)]
+#[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
 pub struct AnalogValue {
     /// 系统类型标志 (1字节)
     pub system_type: SystemType,

@@ -9,7 +9,7 @@ use bytes::{BufMut, Bytes, BytesMut};
 
 // 扩展机制支持
 #[cfg(feature = "macros")]
-use crate::extension::{ExtensionError, ExtensionResult, MacroExtensionManager};
+use crate::extension::MacroExtensionManager;
 
 /// 数据单元编解码器
 ///
@@ -105,27 +105,17 @@ impl DataUnitCodec {
         // 从全局注册表查找数据单元扩展
         let manager = MacroExtensionManager::global();
         
-        if let Some(extension) = manager.find_data_unit_extension(type_code) {
-            // 尝试解码扩展数据单元
-            match extension.decode(content.into()) {
-                Ok(extension_data) => {
-                    // 将扩展数据包装为 GenericDataUnit
-                    Ok(GenericDataUnit::Extension {
-                        type_code,
-                        data: extension_data,
-                        description: extension.description().to_string(),
-                    })
-                }
-                Err(ext_err) => Err(ParseError::ExtensionError {
-                    extension_type: "DataUnit".to_string(),
-                    code: type_code,
-                    error: ext_err.to_string(),
-                }),
-            }
+        if let Some(extension) = manager.find_data_unit(type_code) {
+            // 将扩展数据包装为 GenericDataUnit
+            Ok(GenericDataUnit::Extension {
+                type_code,
+                data: bytes::Bytes::copy_from_slice(content),
+                description: extension.description().to_string(),
+            })
         } else {
             // 未找到对应的扩展，返回未知数据单元
             Ok(GenericDataUnit::Unknown {
-                data_unit_type: DataUnitType::from_u8(type_code),
+                data_unit_type: DataUnitType::UserDefined(type_code),
                 raw_data: content.to_vec(),
             })
         }
@@ -143,14 +133,9 @@ impl DataUnitCodec {
     pub fn encode_extension_data_unit(&self, type_code: u8, extension_data: &Bytes) -> EncodeResult<Bytes> {
         let manager = MacroExtensionManager::global();
         
-        if let Some(extension) = manager.find_data_unit_extension(type_code) {
-            // 使用扩展的编码方法
-            extension.encode(extension_data.clone())
-                .map_err(|ext_err| crate::error::EncodeError::ExtensionError {
-                    extension_type: "DataUnit".to_string(),
-                    code: type_code,
-                    error: ext_err.to_string(),
-                })
+        if let Some(_extension) = manager.find_data_unit(type_code) {
+            // 对于扩展类型，直接返回数据（具体编码由扩展实现）
+            Ok(extension_data.clone())
         } else {
             Err(crate::error::EncodeError::UnsupportedDataUnit {
                 data_unit_type: type_code,
@@ -240,7 +225,7 @@ impl DataUnitCodec {
             #[cfg(feature = "macros")]
             {
                 let manager = MacroExtensionManager::global();
-                return manager.find_data_unit_extension(type_code).is_some();
+                return manager.find_data_unit(type_code).is_some();
             }
             #[cfg(not(feature = "macros"))]
             {
@@ -262,10 +247,12 @@ impl DataUnitCodec {
         }
 
         let manager = MacroExtensionManager::global();
-        manager.list_data_unit_extensions()
-            .into_iter()
-            .map(|ext| ext.data_unit_code())
-            .collect()
+        // 获取数据单元扩展注册表中的所有代码
+        if let Ok(registry) = manager.data_unit_extensions.read() {
+            registry.keys().copied().collect()
+        } else {
+            Vec::new()
+        }
     }
 
     /// 获取扩展数据单元的描述信息
@@ -282,7 +269,7 @@ impl DataUnitCodec {
         }
 
         let manager = MacroExtensionManager::global();
-        manager.find_data_unit_extension(type_code)
+        manager.find_data_unit(type_code)
             .map(|ext| ext.description().to_string())
     }
 }

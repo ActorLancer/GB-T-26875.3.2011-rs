@@ -2,9 +2,9 @@
 //!
 //! 为GB26875协议提供tokio-util的Framed支持，用于异步网络通信
 
-use crate::error::{EncodeError, EncodeResult, ParseError, ParseResult};
+use crate::error::{EncodeResult, ParseError, ParseResult};
 use crate::frame::Packet;
-use bytes::{Buf, BufMut, Bytes, BytesMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use std::io;
 
 #[cfg(feature = "async")]
@@ -57,10 +57,7 @@ impl GB26875FramedCodec {
 
         // 检查启动符
         if buf[0] != 0x40 || buf[1] != 0x40 {
-            return Err(ParseError::InvalidStartMarker {
-                expected: [0x40, 0x40],
-                actual: [buf[0], buf[1]],
-            });
+            return Err(ParseError::InvalidStartMarker(buf[0], buf[1]));
         }
 
         // 解析数据长度字段（控制单元第23-24字节）
@@ -74,10 +71,10 @@ impl GB26875FramedCodec {
         let total_length = 25 + data_length + 1 + 1;
 
         // 检查最大长度限制
-        if self.validate_length && total_length > self.max_frame_length {
+        if total_length > self.max_frame_length {
             return Err(ParseError::FrameTooLarge {
+                size: total_length,
                 max_size: self.max_frame_length,
-                actual_size: total_length,
             });
         }
 
@@ -89,10 +86,7 @@ impl GB26875FramedCodec {
         // 检查结束符
         let end_marker_pos = total_length - 1;
         if buf[end_marker_pos] != 0x23 {
-            return Err(ParseError::InvalidEndMarker {
-                expected: 0x23,
-                actual: buf[end_marker_pos],
-            });
+            return Err(ParseError::InvalidEndMarker(0x23, buf[end_marker_pos]));
         }
 
         Ok(Some(total_length))
@@ -242,8 +236,8 @@ impl LengthFieldCodec {
 
         if frame_length > self.max_frame_length {
             return Err(ParseError::FrameTooLarge {
+                size: frame_length,
                 max_size: self.max_frame_length,
-                actual_size: frame_length,
             });
         }
 
@@ -327,7 +321,7 @@ impl StreamProcessor {
                 Ok(Some(packet))
             }
             Ok(None) => Ok(None),
-            Err(e) => Err(ParseError::IoError(e.to_string())),
+            Err(e) => Err(ParseError::Io(e)),
         }
     }
 
@@ -399,8 +393,7 @@ pub struct StreamStats {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::frame::{Header, TimeStamp};
-    use crate::protocol::{constants::*, CommandCode};
+    use crate::frame::{ControlUnit, Timestamp};
 
     #[test]
     fn test_gb26875_framed_codec_creation() {
@@ -473,22 +466,19 @@ mod tests {
         let mut dst = BytesMut::new();
 
         // 创建一个测试数据包
-        let header = Header {
-            start_marker: START_MARKER,
-            version: PROTOCOL_VERSION,
-            timestamp: TimeStamp([25, 11, 4, 14, 30, 0]),
-            source_address: 0x1234,
-            destination_address: 0x5678,
-            application_data_unit_length: 0,
-            command_code: CommandCode::ConfirmTestCommand,
-            serial_number: 1,
+        let control_unit = ControlUnit {
+            sequence: 1,
+            version: crate::protocol::ProtocolVersion::standard(),
+            timestamp: Timestamp::now(),
+            source_addr: 0x1234,
+            dest_addr: 0x5678,
+            data_unit_len: 0,
+            command: crate::protocol::Command::SendData,
         };
 
         let packet = Packet {
-            header,
-            application_data_unit: vec![],
-            checksum: 0,
-            end_marker: END_MARKER,
+            control_unit,
+            data_unit: None,
         };
 
         let result = codec.encode(packet, &mut dst);
