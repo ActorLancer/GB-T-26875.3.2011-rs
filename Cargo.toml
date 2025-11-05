@@ -19,6 +19,9 @@ thiserror = "1"
 encoding_rs = { version = "0.8", optional = true }
 once_cell = "1"
 
+# 过程宏支持
+gb26875_macros = { path = "gb26875_macros", optional = true }
+
 # 日志 facade（只依赖接口）
 log = { version = "0.4", optional = true }
 
@@ -58,8 +61,11 @@ logging = ["dep:log"]
 # 字符串编码支持
 encoding = ["dep:encoding_rs"]
 
+# 扩展机制支持
+macros = ["dep:gb26875_macros"]
+
 # 完整功能
-full = ["serde", "async", "logging", "encoding"]
+full = ["serde", "async", "logging", "encoding", "macros"]
 
 # Examples will be added later
 # [[example]]

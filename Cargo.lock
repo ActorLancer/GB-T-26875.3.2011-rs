@@ -286,6 +286,7 @@ dependencies = [
  "criterion",
  "encoding_rs",
  "env_logger",
+ "gb26875_macros",
  "hex",
  "log",
  "once_cell",
@@ -294,6 +295,16 @@ dependencies = [
  "thiserror",
  "tokio",
  "tokio-util",
+]
+
+[[package]]
+name = "gb26875_macros"
+version = "0.1.0"
+dependencies = [
+ "once_cell",
+ "proc-macro2",
+ "quote",
+ "syn",
 ]
 
 [[package]]

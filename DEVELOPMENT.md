@@ -107,6 +107,11 @@ gb26875/
 ├── DEVELOPMENT.md              # 开发文档（本文件）
 ├── TODO.md                     # 开发任务清单
 │
+├── gb26875_macros/             # 过程宏子crate
+│   ├── Cargo.toml             # 宏crate配置
+│   └── src/
+│       └── lib.rs             # 过程宏实现
+│
 ├── examples/                   # 使用示例
 │   ├── parse_packet.rs        # 解析数据包示例
 │   ├── build_packet.rs        # 构建数据包示例
@@ -256,14 +261,31 @@ gb26875/
   - [ ] 数据单元标识符处理
 
 ### 🔵 Phase 4: 扩展机制（优先级：高）
-- [ ] **4.1** 扩展框架 (`extension/`)
-  - [ ] 定义扩展 trait（CustomDataUnit、DataUnitExtension）
-  - [ ] 实现全局注册表（线程安全）
-  - [ ] 实现未知类型的默认处理
+- [x] **4.1** 扩展框架实现
+  - [x] **4.1.1** 过程宏子crate (`gb26875_macros/`)
+    - [x] 创建 gb26875_macros 子crate
+    - [x] 实现基础的派生宏框架
+    - [x] 更新主项目依赖配置
+  - [ ] **4.1.2** 核心trait和注册表 (`extension/`)
+    - [ ] 实现 `extension/traits.rs`（ExtensionTrait、CustomDataUnit等）
+    - [ ] 实现 `extension/registry.rs`（全局注册表、线程安全）
+    - [ ] 实现命名空间机制（模块路径+版本冲突解决）
+  - [ ] **4.1.3** Codec集成 (`codec/`)
+    - [ ] 修改现有 DataUnitCodec 支持扩展类型
+    - [ ] 实现 trait specialization 处理逻辑
+    - [ ] 确保向后兼容性（标准类型优先）
+  - [ ] **4.1.4** 简单扩展宏
+    - [ ] 实现 Command、DataType、SystemType、ComponentType 扩展宏
+    - [ ] 集成到注册表（lazy registration机制）
+    - [ ] 编写基础测试（注册、解析、编码）
+  - [ ] **4.1.5** 复杂扩展宏
+    - [ ] 实现 AnalogType 扩展宏
+    - [ ] 支持两种范围格式（字符串和元组）
+    - [ ] 完善错误处理（详细冲突信息）
 - [ ] **4.2** 扩展辅助工具
-  - [ ] 编写扩展定义宏
-  - [ ] 提供扩展示例代码
-  - [ ] 编写扩展开发文档
+  - [ ] 编写扩展开发文档和最佳实践
+  - [ ] 提供完整扩展示例代码
+  - [ ] 实现扩展验证工具
 
 ### 🟢 Phase 5: 友好 API（优先级：中）
 - [ ] **5.1** 构建器 (`builder/`)
@@ -297,6 +319,7 @@ gb26875/
   - [ ] API 文档（rustdoc）
   - [ ] 使用指南
   - [ ] 最佳实践文档
+  - [ ] 修复文档测试失败问题（发布前完成）
 
 ### 🟢 Phase 8: 发布准备（优先级：低）
 - [ ] **8.1** 代码质量
@@ -377,6 +400,6 @@ full = ["serde", "async", "logging"]
 
 ---
 
-**更新时间**: 2025年11月3日  
-**版本**: v1.0  
-**状态**: 设计阶段 → 开发阶段准备中
+**更新时间**: 2025年11月5日  
+**版本**: v1.1  
+**状态**: Phase 4 扩展机制开发中

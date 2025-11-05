@@ -321,12 +321,39 @@ pub enum ExtensionError {
     },
 
     /// 解析错误
-    #[error("Parse error")]
-    ParseError(#[from] ParseError),
+    #[error("Parse error: {0}")]
+    ParseError(String),
 
     /// 注册表锁错误
     #[error("Registry lock error")]
     RegistryLockError,
+}
+
+impl Clone for ExtensionError {
+    fn clone(&self) -> Self {
+        match self {
+            ExtensionError::InvalidTypeFlag(flag) => ExtensionError::InvalidTypeFlag(*flag),
+            ExtensionError::AlreadyRegistered { type_id } => {
+                ExtensionError::AlreadyRegistered { type_id: *type_id }
+            }
+            ExtensionError::NotFound { type_id } => ExtensionError::NotFound { type_id: *type_id },
+            ExtensionError::ParseFailed { type_id, error } => ExtensionError::ParseFailed {
+                type_id: *type_id,
+                error: error.clone(),
+            },
+            ExtensionError::ValidationError { reason } => ExtensionError::ValidationError {
+                reason: reason.clone(),
+            },
+            ExtensionError::ParseError(msg) => ExtensionError::ParseError(msg.clone()),
+            ExtensionError::RegistryLockError => ExtensionError::RegistryLockError,
+        }
+    }
+}
+
+impl From<ParseError> for ExtensionError {
+    fn from(err: ParseError) -> Self {
+        ExtensionError::ParseError(err.to_string())
+    }
 }
 
 /// 解析结果类型
