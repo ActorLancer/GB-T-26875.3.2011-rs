@@ -2,18 +2,18 @@
 //!
 //! 根据 GB26875 协议第8.2.1节实现的部件状态信息对象，用于上传建筑消防设施部件的运行状态。
 
-use bytes::Bytes;
-use crate::error::{ParseResult, EncodeResult};
-use crate::frame::timestamp::Timestamp;
-use crate::protocol::types::{SystemType, ComponentType};
 use super::InfoObject;
+use crate::error::{EncodeResult, ParseResult};
+use crate::frame::timestamp::Timestamp;
+use crate::protocol::types::{ComponentType, SystemType};
+use bytes::Bytes;
 
 /// 建筑消防设施部件状态 (40字节信息体 + 6字节时间戳)
-/// 
+///
 /// 根据GB26875协议8.2.1节定义，用于上传建筑消防设施部件运行状态信息
-/// 
+///
 /// ## 字段布局
-/// 
+///
 /// | 字段名        | 字节数 | 说明                     |
 /// |--------------|-------|--------------------------|
 /// | 系统类型标志   | 1     | 建筑消防设施系统类型        |
@@ -23,14 +23,14 @@ use super::InfoObject;
 /// | 部件状态      | 2     | 部件运行状态(小端序)        |
 /// | 部件说明      | 31    | 部件说明(GB18030编码)      |
 /// | 状态发生时间   | 6     | 时间戳                   |
-/// 
+///
 /// ## 示例
-/// 
+///
 /// ```rust
 /// use gb26875::info_object::component_status::ComponentStatus;
 /// use gb26875::protocol::types::{SystemType, ComponentType};
 /// use gb26875::frame::timestamp::Timestamp;
-/// 
+///
 /// let status = ComponentStatus::new(
 ///     SystemType::FireAlarm,
 ///     1,                              // 系统地址
@@ -80,7 +80,7 @@ impl ComponentStatus {
             timestamp,
         }
     }
-    
+
     /// 设置部件说明文本 (自动转换为GB18030编码)
     pub fn with_description_text(mut self, text: &str) -> Self {
         let mut desc = [0u8; 31];
@@ -90,7 +90,7 @@ impl ComponentStatus {
         self.component_description = desc;
         self
     }
-    
+
     /// 获取部件说明的文本形式
     pub fn description_text(&self) -> Result<&str, std::str::Utf8Error> {
         let text = std::str::from_utf8(&self.component_description)?;
@@ -102,14 +102,14 @@ impl InfoObject for ComponentStatus {
     fn object_type(&self) -> u8 {
         2 // 上传建筑消防设施部件运行状态
     }
-    
+
     fn description(&self) -> Option<&str> {
         Some("建筑消防设施部件状态")
     }
-    
+
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = Vec::with_capacity(46); // 40字节信息体 + 6字节时间戳
-        
+
         // 信息体 (40字节)
         buf.push(self.system_type.to_u8());
         buf.push(self.system_address);
@@ -117,32 +117,32 @@ impl InfoObject for ComponentStatus {
         buf.extend_from_slice(&self.component_address.to_le_bytes()); // 4字节，小端序
         buf.extend_from_slice(&self.component_state.to_le_bytes()); // 2字节，小端序
         buf.extend_from_slice(&self.component_description); // 31字节
-        
+
         // 时间戳 (6字节)
         buf.extend_from_slice(&self.timestamp.to_bytes());
-        
+
         Ok(Bytes::from(buf))
     }
-    
+
     fn parse(data: &[u8]) -> ParseResult<Self> {
         if data.len() < 46 {
-            return Err(crate::error::ParseError::TooShort { 
-                expected: 46, 
-                actual: data.len() 
+            return Err(crate::error::ParseError::TooShort {
+                expected: 46,
+                actual: data.len(),
             });
         }
-        
+
         let system_type = SystemType::from_u8(data[0]);
         let system_address = data[1];
         let component_type = ComponentType::from_u8(data[2]);
         let component_address = u32::from_le_bytes([data[3], data[4], data[5], data[6]]);
         let component_state = u16::from_le_bytes([data[7], data[8]]);
-        
+
         let mut component_description = [0u8; 31];
         component_description.copy_from_slice(&data[9..40]);
-        
+
         let timestamp = Timestamp::from_bytes(&data[40..46])?;
-        
+
         Ok(ComponentStatus::new(
             system_type,
             system_address,
@@ -153,7 +153,7 @@ impl InfoObject for ComponentStatus {
             timestamp,
         ))
     }
-    
+
     fn timestamp(&self) -> Option<&Timestamp> {
         Some(&self.timestamp)
     }
@@ -162,7 +162,7 @@ impl InfoObject for ComponentStatus {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::types::{SystemType, ComponentType};
+    use crate::protocol::types::{ComponentType, SystemType};
 
     #[test]
     fn test_component_status_encode_decode() {
@@ -174,7 +174,7 @@ mod tests {
             0x12345678,
             0x0002,
             [0u8; 31],
-            timestamp
+            timestamp,
         );
 
         // 测试编码
@@ -196,8 +196,9 @@ mod tests {
             0x12345678,
             0x0002,
             [0u8; 31],
-            timestamp
-        ).with_description_text("烟雾探测器");
+            timestamp,
+        )
+        .with_description_text("烟雾探测器");
 
         // 验证描述设置正确
         let desc_text = status.description_text().unwrap();
@@ -214,13 +215,16 @@ mod tests {
             0xABCDEF12,
             0x0008,
             [0u8; 31],
-            timestamp
+            timestamp,
         );
 
         assert_eq!(status.object_type(), 2);
         assert_eq!(status.system_type, SystemType::FireAlarm);
         assert_eq!(status.system_address, 2);
-        assert_eq!(status.component_type, ComponentType::TemperatureFireDetector);
+        assert_eq!(
+            status.component_type,
+            ComponentType::TemperatureFireDetector
+        );
         assert_eq!(status.component_address, 0xABCDEF12);
         assert_eq!(status.component_state, 0x0008);
         assert_eq!(status.description(), Some("建筑消防设施部件状态"));

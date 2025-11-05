@@ -47,7 +47,8 @@ impl ExtensionTypeInfo {
 }
 
 /// 扩展工厂函数类型
-pub type ExtensionFactory = Arc<dyn Fn(&[u8]) -> ExtensionResult<Box<dyn ExtensionDataUnit>> + Send + Sync>;
+pub type ExtensionFactory =
+    Arc<dyn Fn(&[u8]) -> ExtensionResult<Box<dyn ExtensionDataUnit>> + Send + Sync>;
 
 /// 线程安全的扩展注册表
 #[derive(Debug)]
@@ -66,7 +67,10 @@ struct ExtensionRegistryInner {
 impl std::fmt::Debug for ExtensionRegistryInner {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         f.debug_struct("ExtensionRegistryInner")
-            .field("factories", &format!("<{} factories>", self.factories.len()))
+            .field(
+                "factories",
+                &format!("<{} factories>", self.factories.len()),
+            )
             .field("type_infos", &self.type_infos)
             .finish()
     }
@@ -84,11 +88,11 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 注册扩展类型
-    /// 
+    ///
     /// # Arguments
     /// * `type_info` - 类型信息
     /// * `factory` - 工厂函数
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<()>` - 成功返回 ()
     pub fn register(
@@ -96,7 +100,8 @@ impl ThreadSafeExtensionRegistry {
         type_info: ExtensionTypeInfo,
         factory: ExtensionFactory,
     ) -> ExtensionResult<()> {
-        let mut inner = self.inner
+        let mut inner = self
+            .inner
             .write()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表写锁".to_string(),
@@ -111,7 +116,9 @@ impl ThreadSafeExtensionRegistry {
 
         // 检查是否已注册
         if inner.factories.contains_key(&type_info.type_id) {
-            let existing_name = inner.type_infos.get(&type_info.type_id)
+            let existing_name = inner
+                .type_infos
+                .get(&type_info.type_id)
                 .map(|info| info.name.clone())
                 .unwrap_or_else(|| "unknown".to_string());
             return Err(ExtensionError::ValidationError {
@@ -127,20 +134,25 @@ impl ThreadSafeExtensionRegistry {
         inner.type_infos.insert(type_id, type_info);
 
         #[cfg(feature = "logging")]
-        log::info!("注册扩展类型: ID={}, 名称={}", type_id, inner.type_infos[&type_id].name);
+        log::info!(
+            "注册扩展类型: ID={}, 名称={}",
+            type_id,
+            inner.type_infos[&type_id].name
+        );
 
         Ok(())
     }
 
     /// 解注册扩展类型
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<()>` - 成功返回 ()
     pub fn unregister(&self, type_id: u8) -> ExtensionResult<()> {
-        let mut inner = self.inner
+        let mut inner = self
+            .inner
             .write()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表写锁".to_string(),
@@ -164,30 +176,25 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 解析扩展数据单元
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
     /// * `data` - 原始数据
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Box<dyn ExtensionDataUnit>>` - 成功返回扩展数据单元
-    pub fn parse(
-        &self,
-        type_id: u8,
-        data: &[u8],
-    ) -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
-        let inner = self.inner
+    pub fn parse(&self, type_id: u8, data: &[u8]) -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
+        let inner = self
+            .inner
             .read()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表读锁".to_string(),
             })?;
 
         match inner.factories.get(&type_id) {
-            Some(factory) => {
-                factory(data).map_err(|e| ExtensionError::ValidationError {
-                    reason: format!("解析类型ID {} 失败: {}", type_id, e),
-                })
-            }
+            Some(factory) => factory(data).map_err(|e| ExtensionError::ValidationError {
+                reason: format!("解析类型ID {} 失败: {}", type_id, e),
+            }),
             None => Err(ExtensionError::ValidationError {
                 reason: format!("类型ID {} 未注册", type_id),
             }),
@@ -195,14 +202,15 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 检查类型是否已注册
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<bool>` - 成功返回是否已注册
     pub fn is_registered(&self, type_id: u8) -> ExtensionResult<bool> {
-        let inner = self.inner
+        let inner = self
+            .inner
             .read()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表读锁".to_string(),
@@ -212,14 +220,15 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 获取类型信息
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Option<ExtensionTypeInfo>>` - 成功返回类型信息
     pub fn get_type_info(&self, type_id: u8) -> ExtensionResult<Option<ExtensionTypeInfo>> {
-        let inner = self.inner
+        let inner = self
+            .inner
             .read()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表读锁".to_string(),
@@ -229,11 +238,12 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 获取所有已注册类型的信息
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Vec<ExtensionTypeInfo>>` - 成功返回类型信息列表
     pub fn list_registered_types(&self) -> ExtensionResult<Vec<ExtensionTypeInfo>> {
-        let inner = self.inner
+        let inner = self
+            .inner
             .read()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表读锁".to_string(),
@@ -243,11 +253,12 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 获取已注册类型的数量
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<usize>` - 成功返回类型数量
     pub fn len(&self) -> ExtensionResult<usize> {
-        let inner = self.inner
+        let inner = self
+            .inner
             .read()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表读锁".to_string(),
@@ -257,11 +268,12 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 检查注册表是否为空
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<bool>` - 成功返回是否为空
     pub fn is_empty(&self) -> ExtensionResult<bool> {
-        let inner = self.inner
+        let inner = self
+            .inner
             .read()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表读锁".to_string(),
@@ -271,15 +283,17 @@ impl ThreadSafeExtensionRegistry {
     }
 
     /// 清空注册表
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<()>` - 成功返回 ()
     pub fn clear(&self) -> ExtensionResult<()> {
-        let mut inner = self.inner
+        let mut inner = self
+            .inner
             .write()
             .map_err(|_| ExtensionError::ValidationError {
                 reason: "无法获取注册表写锁".to_string(),
-            })?;        #[cfg(feature = "logging")]
+            })?;
+        #[cfg(feature = "logging")]
         let count = inner.factories.len();
         inner.factories.clear();
         inner.type_infos.clear();
@@ -319,12 +333,12 @@ impl ExtensionRegistryBuilder {
     }
 
     /// 注册扩展类型
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
     /// * `name` - 类型名称
     /// * `factory` - 工厂函数
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Self>` - 成功返回构建器
     pub fn register<F>(self, type_id: u8, name: &str, factory: F) -> ExtensionResult<Self>
@@ -333,19 +347,19 @@ impl ExtensionRegistryBuilder {
     {
         let type_info = ExtensionTypeInfo::new(type_id, name.to_string());
         let factory = Arc::new(factory);
-        
+
         self.registry.register(type_info, factory)?;
         Ok(self)
     }
 
     /// 注册带描述的扩展类型
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
     /// * `name` - 类型名称
     /// * `description` - 描述信息
     /// * `factory` - 工厂函数
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Self>` - 成功返回构建器
     pub fn register_with_description<F>(
@@ -361,19 +375,19 @@ impl ExtensionRegistryBuilder {
         let type_info = ExtensionTypeInfo::new(type_id, name.to_string())
             .with_description(description.to_string());
         let factory = Arc::new(factory);
-        
+
         self.registry.register(type_info, factory)?;
         Ok(self)
     }
 
     /// 注册带版本的扩展类型
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
     /// * `name` - 类型名称
     /// * `version` - 版本信息
     /// * `factory` - 工厂函数
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Self>` - 成功返回构建器
     pub fn register_with_version<F>(
@@ -386,23 +400,23 @@ impl ExtensionRegistryBuilder {
     where
         F: Fn(&[u8]) -> ExtensionResult<Box<dyn ExtensionDataUnit>> + Send + Sync + 'static,
     {
-        let type_info = ExtensionTypeInfo::new(type_id, name.to_string())
-            .with_version(version.to_string());
+        let type_info =
+            ExtensionTypeInfo::new(type_id, name.to_string()).with_version(version.to_string());
         let factory = Arc::new(factory);
-        
+
         self.registry.register(type_info, factory)?;
         Ok(self)
     }
 
     /// 注册完整信息的扩展类型
-    /// 
+    ///
     /// # Arguments
     /// * `type_id` - 类型ID
     /// * `name` - 类型名称
     /// * `description` - 描述信息
     /// * `version` - 版本信息
     /// * `factory` - 工厂函数
-    /// 
+    ///
     /// # Returns
     /// * `ExtensionResult<Self>` - 成功返回构建器
     pub fn register_full<F>(
@@ -420,13 +434,13 @@ impl ExtensionRegistryBuilder {
             .with_description(description.to_string())
             .with_version(version.to_string());
         let factory = Arc::new(factory);
-        
+
         self.registry.register(type_info, factory)?;
         Ok(self)
     }
 
     /// 构建注册表
-    /// 
+    ///
     /// # Returns
     /// * `ThreadSafeExtensionRegistry` - 构建的注册表
     pub fn build(self) -> ThreadSafeExtensionRegistry {
@@ -493,10 +507,12 @@ mod tests {
             .with_description("测试扩展数据单元".to_string())
             .with_version("1.0.0".to_string());
 
-        let factory = Arc::new(|data: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
-            let ext = TestExtension::parse(200, data)?;
-            Ok(Box::new(ext))
-        });
+        let factory = Arc::new(
+            |data: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
+                let ext = TestExtension::parse(200, data)?;
+                Ok(Box::new(ext))
+            },
+        );
 
         assert!(registry.register(type_info, factory).is_ok());
 
@@ -508,10 +524,13 @@ mod tests {
         let info = registry.get_type_info(200).unwrap().unwrap();
         assert_eq!(info.name, "TestExtension");
         assert_eq!(info.description, Some("测试扩展数据单元".to_string()));
-        assert_eq!(info.version, Some("1.0.0".to_string()));        // 测试解析
+        assert_eq!(info.version, Some("1.0.0".to_string())); // 测试解析
         let test_data = [0x12, 0x34, 0x56, 0x78];
         let parsed = registry.parse(200, &test_data).unwrap();
-        assert_eq!(parsed.as_any().type_id(), std::any::TypeId::of::<TestExtension>());
+        assert_eq!(
+            parsed.as_any().type_id(),
+            std::any::TypeId::of::<TestExtension>()
+        );
 
         // 测试列出所有类型
         let types = registry.list_registered_types().unwrap();
@@ -571,16 +590,14 @@ mod tests {
 
         // 测试无效的类型ID
         let type_info = ExtensionTypeInfo::new(127, "InvalidExtension".to_string()); // 小于128
-        let factory = Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
-            unreachable!()
-        });
+        let factory =
+            Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> { unreachable!() });
 
         assert!(registry.register(type_info, factory).is_err());
 
         let type_info = ExtensionTypeInfo::new(255, "InvalidExtension".to_string()); // 大于254
-        let factory = Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
-            unreachable!()
-        });
+        let factory =
+            Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> { unreachable!() });
 
         assert!(registry.register(type_info, factory).is_err());
     }
@@ -590,18 +607,16 @@ mod tests {
         let registry = ThreadSafeExtensionRegistry::new();
 
         let type_info = ExtensionTypeInfo::new(200, "FirstExtension".to_string());
-        let factory = Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
-            unreachable!()
-        });
+        let factory =
+            Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> { unreachable!() });
 
         // 第一次注册应该成功
         assert!(registry.register(type_info, factory).is_ok());
 
         // 第二次注册同一个类型ID应该失败
         let type_info = ExtensionTypeInfo::new(200, "SecondExtension".to_string());
-        let factory = Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> {
-            unreachable!()
-        });
+        let factory =
+            Arc::new(|_: &[u8]| -> ExtensionResult<Box<dyn ExtensionDataUnit>> { unreachable!() });
 
         assert!(registry.register(type_info, factory).is_err());
     }

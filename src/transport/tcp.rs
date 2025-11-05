@@ -1,7 +1,7 @@
 // TCP传输模块（占位符实现）
 // 此模块将在Phase 2中完整实现
 
-use crate::error::{ParseError, EncodeError};
+use crate::error::{EncodeError, ParseError};
 use crate::frame::Packet;
 use bytes::Bytes;
 use std::io;

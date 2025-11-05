@@ -7,24 +7,24 @@ use thiserror::Error;
 pub enum ParseError {
     /// 地址错误
     #[error("Address error: {0} - {1}")]
-    ValidAddress(u64, String),    
-    
+    ValidAddress(u64, String),
+
     /// 数据包太短  
     #[error("Packet too short: got {actual} bytes, need at least {expected}")]
-    TooShort { 
+    TooShort {
         /// 期望的字节数
-        expected: usize, 
+        expected: usize,
         /// 实际获得的字节数
-        actual: usize 
+        actual: usize,
     },
 
     /// 数据不足
     #[error("Insufficient data: expected {expected} bytes, got {actual}")]
-    InsufficientData { 
+    InsufficientData {
         /// 期望的字节数
-        expected: usize, 
+        expected: usize,
         /// 实际获得的字节数
-        actual: usize 
+        actual: usize,
     },
 
     /// 无效的系统类型
@@ -45,11 +45,11 @@ pub enum ParseError {
 
     /// 无效的帧开始
     #[error("Invalid frame start: expected {expected:?}, got {found:?}")]
-    InvalidFrameStart { 
+    InvalidFrameStart {
         /// 期望的字节序列
-        expected: Vec<u8>, 
+        expected: Vec<u8>,
         /// 实际发现的字节序列
-        found: Vec<u8> 
+        found: Vec<u8>,
     },
 
     /// 无效的结束符
@@ -58,11 +58,11 @@ pub enum ParseError {
 
     /// 无效的帧结束
     #[error("Invalid frame end: expected {expected:?}, got {found:?}")]
-    InvalidFrameEnd { 
+    InvalidFrameEnd {
         /// 期望的字节序列
-        expected: Vec<u8>, 
+        expected: Vec<u8>,
         /// 实际发现的字节序列
-        found: Vec<u8> 
+        found: Vec<u8>,
     },
 
     /// 校验和错误
@@ -71,38 +71,38 @@ pub enum ParseError {
 
     /// 校验和不匹配
     #[error("Checksum mismatch: expected {expected}, got {actual}")]
-    ChecksumMismatch { 
+    ChecksumMismatch {
         /// 期望的校验和
-        expected: u8, 
+        expected: u8,
         /// 实际的校验和
-        actual: u8 
+        actual: u8,
     },
 
     /// 数据单元长度超限
     #[error("Data unit too large: {size} bytes (max: {max_size})")]
-    DataUnitTooLarge { 
+    DataUnitTooLarge {
         /// 实际大小
-        size: usize, 
+        size: usize,
         /// 最大允许大小
-        max_size: usize 
+        max_size: usize,
     },
 
     /// 数据长度不匹配
     #[error("Data length mismatch: expected {expected}, got {actual}")]
-    DataLengthMismatch { 
+    DataLengthMismatch {
         /// 期望的长度
-        expected: usize, 
+        expected: usize,
         /// 实际的长度
-        actual: usize 
+        actual: usize,
     },
 
     /// 无效的数据长度
     #[error("Invalid data length: {actual} (expected: {expected})")]
-    InvalidDataLength { 
+    InvalidDataLength {
         /// 实际长度
-        actual: usize, 
+        actual: usize,
         /// 期望长度
-        expected: usize 
+        expected: usize,
     },
 
     /// 数据单元长度不匹配
@@ -119,90 +119,92 @@ pub enum ParseError {
     UnsupportedVersion {
         /// 版本字符串
         version: String,
-    },    /// 无效的值
+    },
+    /// 无效的值
     #[error("Invalid value: {value} for field '{field}' - {reason}")]
-    InvalidValue { 
+    InvalidValue {
         /// 字段名称
-        field: String, 
+        field: String,
         /// 字段值
         value: String,
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// 无效的时间戳
     #[error("Invalid timestamp: {field} = {value}")]
-    InvalidTimestamp { 
+    InvalidTimestamp {
         /// 字段名称
-        field: String, 
+        field: String,
         /// 字段值
-        value: u8 
+        value: u8,
     },
 
     /// 无效的时间戳（带原因）
     #[error("Invalid timestamp: {reason}")]
-    InvalidTimestampReason { 
+    InvalidTimestampReason {
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// 缓冲区太大
     #[error("Buffer too large: got {actual_size} bytes, max {max_size}")]
-    BufferTooLarge { 
+    BufferTooLarge {
         /// 最大允许大小
-        max_size: usize, 
+        max_size: usize,
         /// 实际大小
-        actual_size: usize 
+        actual_size: usize,
     },
 
     /// 无效的编码
     #[error("Invalid encoding '{encoding}': {reason}")]
-    InvalidEncoding { 
+    InvalidEncoding {
         /// 编码名称
-        encoding: String, 
+        encoding: String,
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// 不支持的编码
     #[error("Unsupported encoding: {encoding}")]
-    UnsupportedEncoding { 
+    UnsupportedEncoding {
         /// 编码名称
-        encoding: String 
+        encoding: String,
     },
 
     /// 无效的布尔值
     #[error("Invalid boolean value: {value} (expected 0 or 1)")]
-    InvalidBooleanValue { 
+    InvalidBooleanValue {
         /// 实际值
-        value: u8 
+        value: u8,
     },
 
     /// 无效的枚举值
     #[error("Invalid enum value: {value} for type {type_name} - {reason}")]
-    InvalidEnumValue { 
+    InvalidEnumValue {
         /// 实际值
-        value: u8, 
+        value: u8,
         /// 类型名称
-        type_name: String, 
+        type_name: String,
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// 字符串编码错误
     #[error("String encoding error: {0}")]
-    StringEncoding(String),    /// 反序列化错误
+    StringEncoding(String),
+    /// 反序列化错误
     #[error("Deserialization error: {message}")]
-    DeserializationError { 
+    DeserializationError {
         /// 错误消息        
-        message: String 
+        message: String,
     },
 
     /// 无效的数据包
     #[error("Invalid packet: {reason}")]
-    InvalidPacket { 
+    InvalidPacket {
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// IO错误（用于async支持）
@@ -219,31 +221,31 @@ pub enum ParseError {
 pub enum EncodeError {
     /// 数据单元太大
     #[error("Data unit too large: {size} bytes (max: {max_size})")]
-    DataUnitTooLarge { 
+    DataUnitTooLarge {
         /// 实际大小
-        size: usize, 
+        size: usize,
         /// 最大允许大小
-        max_size: usize 
+        max_size: usize,
     },
 
     /// 数据太大
     #[error("Data too large: {size} bytes (max: {max_size})")]
-    DataTooLarge { 
+    DataTooLarge {
         /// 实际大小
-        size: usize, 
+        size: usize,
         /// 最大允许大小
-        max_size: usize 
+        max_size: usize,
     },
 
     /// 无效的值
     #[error("Invalid value: {value} for field '{field}' - {reason}")]
-    InvalidValue { 
+    InvalidValue {
         /// 字段名称
-        field: String, 
+        field: String,
         /// 字段值
-        value: String, 
+        value: String,
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// 字符串编码错误
@@ -252,27 +254,28 @@ pub enum EncodeError {
 
     /// 字符串太长
     #[error("String too long: {len} bytes (max: {max})")]
-    StringTooLong { 
+    StringTooLong {
         /// 实际长度
-        len: usize, 
+        len: usize,
         /// 最大允许长度
-        max: usize 
+        max: usize,
     },
 
     /// 序列化错误
     #[error("Serialization error: {message}")]
-    Serialization { 
+    Serialization {
         /// 错误消息
-        message: String 
-    },    /// 类型转换错误
+        message: String,
+    },
+    /// 类型转换错误
     #[error("Type conversion error: {0}")]
     TypeConversion(String),
 
     /// 无效格式
     #[error("Invalid format: {reason}")]
-    InvalidFormat { 
+    InvalidFormat {
         /// 错误原因
-        reason: String 
+        reason: String,
     },
 
     /// IO错误（用于async支持）
@@ -286,35 +289,35 @@ pub enum ExtensionError {
     /// 类型标志无效
     #[error("Invalid type flag: {0} (must be 128-255)")]
     InvalidTypeFlag(u8),
-    
+
     /// 扩展已注册
     #[error("Extension already registered for type {type_id}")]
-    AlreadyRegistered { 
+    AlreadyRegistered {
         /// 类型ID
-        type_id: u8 
+        type_id: u8,
     },
 
     /// 扩展未找到
     #[error("Extension not found for type {type_id}")]
-    NotFound { 
+    NotFound {
         /// 类型ID
-        type_id: u8 
+        type_id: u8,
     },
 
     /// 解析失败
     #[error("Parse failed for extension type {type_id}: {error}")]
-    ParseFailed { 
+    ParseFailed {
         /// 类型ID
-        type_id: u8, 
+        type_id: u8,
         /// 错误信息
-        error: String 
+        error: String,
     },
 
     /// 验证错误
     #[error("Validation error: {reason}")]
     ValidationError {
         /// 错误原因
-        reason: String
+        reason: String,
     },
 
     /// 解析错误

@@ -4,8 +4,8 @@
 //! 应用数据单元长度、命令字节，总共25字节
 
 use crate::error::{ParseError, ParseResult};
-use crate::protocol::{Command, ProtocolVersion};
 use crate::frame::Timestamp;
+use crate::protocol::{Command, ProtocolVersion};
 
 /// GB26875 控制单元（25字节）
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -37,7 +37,8 @@ impl ControlUnit {
         dest_addr: u64,
         data_unit_len: u16,
         command: Command,
-    ) -> ParseResult<Self> {        // 验证数据单元长度
+    ) -> ParseResult<Self> {
+        // 验证数据单元长度
         if data_unit_len > 1024 {
             return Err(ParseError::DataUnitTooLarge {
                 size: data_unit_len as usize,
@@ -48,10 +49,16 @@ impl ControlUnit {
         // 验证地址范围（6字节最大值）
         const MAX_ADDR: u64 = 0xFFFF_FFFF_FFFF;
         if source_addr > MAX_ADDR {
-            return Err(ParseError::ValidAddress(source_addr, "Address length of source exceeds maximum".to_string()));
+            return Err(ParseError::ValidAddress(
+                source_addr,
+                "Address length of source exceeds maximum".to_string(),
+            ));
         }
         if dest_addr > MAX_ADDR {
-            return Err(ParseError::ValidAddress(dest_addr, "Address length of destination exceeds maximum".to_string()));
+            return Err(ParseError::ValidAddress(
+                dest_addr,
+                "Address length of destination exceeds maximum".to_string(),
+            ));
         }
 
         Ok(Self {
@@ -67,7 +74,8 @@ impl ControlUnit {
 
     /// 从字节数组解析控制单元
     pub fn from_bytes(bytes: &[u8]) -> ParseResult<Self> {
-        if bytes.len() < 25 {            return Err(ParseError::TooShort {
+        if bytes.len() < 25 {
+            return Err(ParseError::TooShort {
                 actual: bytes.len(),
                 expected: 25,
             });
@@ -77,7 +85,7 @@ impl ControlUnit {
         let sequence = u16::from_le_bytes([bytes[0], bytes[1]]);
         let version = ProtocolVersion::from_bytes([bytes[2], bytes[3]]);
         let timestamp = Timestamp::from_bytes(&bytes[4..10])?;
-        
+
         // 解析6字节地址（小端序）
         let source_addr = u64::from_le_bytes([
             bytes[10], bytes[11], bytes[12], bytes[13], bytes[14], bytes[15], 0, 0,
@@ -85,7 +93,7 @@ impl ControlUnit {
         let dest_addr = u64::from_le_bytes([
             bytes[16], bytes[17], bytes[18], bytes[19], bytes[20], bytes[21], 0, 0,
         ]);
-        
+
         let data_unit_len = u16::from_le_bytes([bytes[22], bytes[23]]);
         let command = Command::from_u8(bytes[24]);
 
@@ -152,18 +160,28 @@ impl ControlUnit {
     /// 设置源地址（从6字节数组）
     pub fn set_source_addr_from_bytes(&mut self, addr_bytes: [u8; 6]) {
         self.source_addr = u64::from_le_bytes([
-            addr_bytes[0], addr_bytes[1], addr_bytes[2],
-            addr_bytes[3], addr_bytes[4], addr_bytes[5],
-            0, 0,
+            addr_bytes[0],
+            addr_bytes[1],
+            addr_bytes[2],
+            addr_bytes[3],
+            addr_bytes[4],
+            addr_bytes[5],
+            0,
+            0,
         ]);
     }
 
     /// 设置目的地址（从6字节数组）
     pub fn set_dest_addr_from_bytes(&mut self, addr_bytes: [u8; 6]) {
         self.dest_addr = u64::from_le_bytes([
-            addr_bytes[0], addr_bytes[1], addr_bytes[2],
-            addr_bytes[3], addr_bytes[4], addr_bytes[5],
-            0, 0,
+            addr_bytes[0],
+            addr_bytes[1],
+            addr_bytes[2],
+            addr_bytes[3],
+            addr_bytes[4],
+            addr_bytes[5],
+            0,
+            0,
         ]);
     }
 
@@ -177,7 +195,7 @@ impl ControlUnit {
     }
 
     /// 创建应答控制单元
-    /// 
+    ///
     /// 交换源地址和目的地址，设置为确认命令
     pub fn create_ack(&self, ack_command: Command) -> Self {
         Self {
@@ -209,7 +227,7 @@ impl ControlUnit {
             timestamp: Timestamp::now(),
             source_addr: self.dest_addr,
             dest_addr: self.source_addr,
-            data_unit_len,            
+            data_unit_len,
             command: Command::Response,
         }
     }
@@ -275,7 +293,7 @@ mod tests {
     fn test_control_unit_creation() {
         let timestamp = Timestamp::new(2, 58, 9, 26, 9, 12).unwrap();
         let version = ProtocolVersion::new(1, 1);
-        
+
         let control_unit = ControlUnit::new(
             0x0001,
             version,
@@ -284,7 +302,8 @@ mod tests {
             0x01385B,
             0x0030,
             Command::SendData,
-        ).unwrap();
+        )
+        .unwrap();
 
         assert_eq!(control_unit.sequence, 0x0001);
         assert_eq!(control_unit.source_addr, 0x000379);
@@ -297,7 +316,7 @@ mod tests {
     fn test_control_unit_bytes() {
         let timestamp = Timestamp::new(2, 58, 9, 26, 9, 12).unwrap();
         let version = ProtocolVersion::new(1, 1);
-        
+
         let control_unit = ControlUnit::new(
             0x0001,
             version,
@@ -306,11 +325,12 @@ mod tests {
             0x01385B,
             0x0030,
             Command::SendData,
-        ).unwrap();
+        )
+        .unwrap();
 
         let bytes = control_unit.to_bytes();
         let parsed = ControlUnit::from_bytes(&bytes).unwrap();
-        
+
         assert_eq!(control_unit, parsed);
     }
 
@@ -318,7 +338,7 @@ mod tests {
     fn test_create_acknowledge() {
         let timestamp = Timestamp::new(2, 58, 9, 26, 9, 12).unwrap();
         let version = ProtocolVersion::new(1, 1);
-        
+
         let original = ControlUnit::new(
             0x0001,
             version,
@@ -327,10 +347,11 @@ mod tests {
             0x01385B,
             0x0030,
             Command::SendData,
-        ).unwrap();
+        )
+        .unwrap();
 
         let ack = original.create_acknowledge();
-        
+
         assert_eq!(ack.sequence, original.sequence);
         assert_eq!(ack.source_addr, original.dest_addr); // 地址交换
         assert_eq!(ack.dest_addr, original.source_addr);
@@ -342,7 +363,7 @@ mod tests {
     fn test_invalid_data_unit_length() {
         let timestamp = Timestamp::new(2, 58, 9, 26, 9, 12).unwrap();
         let version = ProtocolVersion::new(1, 1);
-        
+
         let result = ControlUnit::new(
             0x0001,
             version,

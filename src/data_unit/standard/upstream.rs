@@ -3,15 +3,15 @@
 //! 包含从用户信息传输装置到监控中心的数据传输单元，
 //! 按照GB26875协议8.3.1节的规定实现。
 
-use crate::error::{ParseError, ParseResult, EncodeResult};
 use crate::data_unit::DataUnit;
-use crate::protocol::DataUnitType;
-use crate::info_object::{SystemStatus as InfoSystemStatus, InfoObject};
+use crate::error::{EncodeResult, ParseError, ParseResult};
 use crate::frame::Timestamp;
-use bytes::{Bytes, BufMut, BytesMut};
+use crate::info_object::{InfoObject, SystemStatus as InfoSystemStatus};
+use crate::protocol::DataUnitType;
+use bytes::{BufMut, Bytes, BytesMut};
 
 /// 上传建筑消防设施系统状态 (类型1)
-/// 
+///
 /// 包含系统状态信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -52,23 +52,24 @@ impl DataUnit for UploadSystemStatus {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 系统状态信息对象
         let info_bytes = self.system_status.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 10 + 6 { // 至少需要1+10+6=17字节 (系统状态是10字节)
+        if data.len() < 1 + 10 + 6 {
+            // 至少需要1+10+6=17字节 (系统状态是10字节)
             return Err(ParseError::InsufficientData {
                 expected: 17,
                 actual: data.len(),
@@ -76,7 +77,7 @@ impl DataUnit for UploadSystemStatus {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -90,11 +91,11 @@ impl DataUnit for UploadSystemStatus {
         }
 
         // 系统状态信息对象 (10字节)
-        let system_status = InfoSystemStatus::parse(&data[offset..offset+10])?;
+        let system_status = InfoSystemStatus::parse(&data[offset..offset + 10])?;
         offset += 10;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -119,7 +120,7 @@ impl DataUnit for UploadSystemStatus {
 }
 
 /// 上传建筑消防设施部件运行状态 (类型2)
-/// 
+///
 /// 包含部件状态信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -134,7 +135,10 @@ pub struct UploadComponentStatus {
 
 impl UploadComponentStatus {
     /// 创建新的上传部件状态数据单元
-    pub fn new(component_status: crate::info_object::ComponentStatus, timestamp: Timestamp) -> Self {
+    pub fn new(
+        component_status: crate::info_object::ComponentStatus,
+        timestamp: Timestamp,
+    ) -> Self {
         Self {
             object_count: 1,
             component_status,
@@ -160,23 +164,24 @@ impl DataUnit for UploadComponentStatus {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 部件状态信息对象
         let info_bytes = self.component_status.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 40 + 6 { // 至少需要1+40+6=47字节 (部件状态是40字节)
+        if data.len() < 1 + 40 + 6 {
+            // 至少需要1+40+6=47字节 (部件状态是40字节)
             return Err(ParseError::InsufficientData {
                 expected: 47,
                 actual: data.len(),
@@ -184,7 +189,7 @@ impl DataUnit for UploadComponentStatus {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -198,11 +203,12 @@ impl DataUnit for UploadComponentStatus {
         }
 
         // 部件状态信息对象 (40字节)
-        let component_status = crate::info_object::ComponentStatus::parse(&data[offset..offset+40])?;
+        let component_status =
+            crate::info_object::ComponentStatus::parse(&data[offset..offset + 40])?;
         offset += 40;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -225,7 +231,7 @@ impl DataUnit for UploadComponentStatus {
 }
 
 /// 上传建筑消防设施模拟量值 (类型3)
-/// 
+///
 /// 包含模拟量值信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -266,23 +272,24 @@ impl DataUnit for UploadAnalogValue {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 模拟量值信息对象
         let info_bytes = self.analog_value.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 10 + 6 { // 至少需要1+10+6=17字节 (模拟量值是10字节)
+        if data.len() < 1 + 10 + 6 {
+            // 至少需要1+10+6=17字节 (模拟量值是10字节)
             return Err(ParseError::InsufficientData {
                 expected: 17,
                 actual: data.len(),
@@ -290,7 +297,7 @@ impl DataUnit for UploadAnalogValue {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -304,11 +311,11 @@ impl DataUnit for UploadAnalogValue {
         }
 
         // 模拟量值信息对象 (10字节)
-        let analog_value = crate::info_object::AnalogValue::parse(&data[offset..offset+10])?;
+        let analog_value = crate::info_object::AnalogValue::parse(&data[offset..offset + 10])?;
         offset += 10;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -331,7 +338,7 @@ impl DataUnit for UploadAnalogValue {
 }
 
 /// 上传建筑消防设施操作信息 (类型4)
-/// 
+///
 /// 包含操作信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -346,7 +353,10 @@ pub struct UploadOperationInfo {
 
 impl UploadOperationInfo {
     /// 创建新的上传操作信息数据单元
-    pub fn new(operation_info: crate::info_object::FireSystemOperation, timestamp: Timestamp) -> Self {
+    pub fn new(
+        operation_info: crate::info_object::FireSystemOperation,
+        timestamp: Timestamp,
+    ) -> Self {
         Self {
             object_count: 1,
             operation_info,
@@ -372,23 +382,24 @@ impl DataUnit for UploadOperationInfo {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 操作信息对象
         let info_bytes = self.operation_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 4 + 6 { // 至少需要1+4+6=11字节 (操作信息是4字节)
+        if data.len() < 1 + 4 + 6 {
+            // 至少需要1+4+6=11字节 (操作信息是4字节)
             return Err(ParseError::InsufficientData {
                 expected: 11,
                 actual: data.len(),
@@ -396,7 +407,7 @@ impl DataUnit for UploadOperationInfo {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -410,11 +421,12 @@ impl DataUnit for UploadOperationInfo {
         }
 
         // 操作信息对象 (4字节)
-        let operation_info = crate::info_object::FireSystemOperation::parse(&data[offset..offset+4])?;
+        let operation_info =
+            crate::info_object::FireSystemOperation::parse(&data[offset..offset + 4])?;
         offset += 4;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -437,7 +449,7 @@ impl DataUnit for UploadOperationInfo {
 }
 
 /// 上传建筑消防设施软件版本 (类型5)
-/// 
+///
 /// 包含软件版本信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -478,23 +490,24 @@ impl DataUnit for UploadSoftwareVersion {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 软件版本信息对象
         let info_bytes = self.version_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 4 + 6 { // 至少需要1+4+6=11字节 (版本信息是4字节)
+        if data.len() < 1 + 4 + 6 {
+            // 至少需要1+4+6=11字节 (版本信息是4字节)
             return Err(ParseError::InsufficientData {
                 expected: 11,
                 actual: data.len(),
@@ -502,7 +515,7 @@ impl DataUnit for UploadSoftwareVersion {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -516,11 +529,11 @@ impl DataUnit for UploadSoftwareVersion {
         }
 
         // 软件版本信息对象 (4字节)
-        let version_info = crate::info_object::FireSystemVersion::parse(&data[offset..offset+4])?;
+        let version_info = crate::info_object::FireSystemVersion::parse(&data[offset..offset + 4])?;
         offset += 4;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -543,7 +556,7 @@ impl DataUnit for UploadSoftwareVersion {
 }
 
 /// 上传建筑消防设施系统配置情况 (类型6)
-/// 
+///
 /// 包含系统配置信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -584,23 +597,24 @@ impl DataUnit for UploadSystemConfig {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 系统配置信息对象
         let info_bytes = self.config_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 6 + 6 { // 至少需要1+6+6=13字节 (系统配置最小6字节)
+        if data.len() < 1 + 6 + 6 {
+            // 至少需要1+6+6=13字节 (系统配置最小6字节)
             return Err(ParseError::InsufficientData {
                 expected: 13,
                 actual: data.len(),
@@ -608,7 +622,7 @@ impl DataUnit for UploadSystemConfig {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -623,11 +637,12 @@ impl DataUnit for UploadSystemConfig {
 
         // 计算配置信息大小 (总长度 - 对象数量 - 时间戳)
         let config_size = data.len() - 1 - 6;
-        let config_info = crate::info_object::FireSystemConfig::parse(&data[offset..offset+config_size])?;
+        let config_info =
+            crate::info_object::FireSystemConfig::parse(&data[offset..offset + config_size])?;
         offset += config_size;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -650,7 +665,7 @@ impl DataUnit for UploadSystemConfig {
 }
 
 /// 上传建筑消防设施部件配置情况 (类型7)
-/// 
+///
 /// 包含部件配置信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -691,23 +706,24 @@ impl DataUnit for UploadComponentConfig {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 部件配置信息对象
         let info_bytes = self.config_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 43 + 6 { // 至少需要1+43+6=50字节 (部件配置是43字节)
+        if data.len() < 1 + 43 + 6 {
+            // 至少需要1+43+6=50字节 (部件配置是43字节)
             return Err(ParseError::InsufficientData {
                 expected: 50,
                 actual: data.len(),
@@ -715,7 +731,7 @@ impl DataUnit for UploadComponentConfig {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -729,11 +745,11 @@ impl DataUnit for UploadComponentConfig {
         }
 
         // 部件配置信息对象 (43字节)
-        let config_info = crate::info_object::ComponentConfig::parse(&data[offset..offset+43])?;
+        let config_info = crate::info_object::ComponentConfig::parse(&data[offset..offset + 43])?;
         offset += 43;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -756,7 +772,7 @@ impl DataUnit for UploadComponentConfig {
 }
 
 /// 上传建筑消防设施系统时间 (类型8)
-/// 
+///
 /// 包含系统时间信息
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -797,23 +813,24 @@ impl DataUnit for UploadSystemTime {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 系统时间 (6字节)
         let system_time_bytes = self.system_time.encode()?;
         buf.extend_from_slice(&system_time_bytes);
-        
+
         // 时间标签 (6字节)
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 6 + 6 { // 需要1+6+6=13字节
+        if data.len() < 1 + 6 + 6 {
+            // 需要1+6+6=13字节
             return Err(ParseError::InsufficientData {
                 expected: 13,
                 actual: data.len(),
@@ -821,7 +838,7 @@ impl DataUnit for UploadSystemTime {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -835,11 +852,11 @@ impl DataUnit for UploadSystemTime {
         }
 
         // 系统时间 (6字节)
-        let system_time = Timestamp::parse(&data[offset..offset+6])?;
+        let system_time = Timestamp::parse(&data[offset..offset + 6])?;
         offset += 6;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -862,7 +879,7 @@ impl DataUnit for UploadSystemTime {
 }
 
 /// 上传用户信息传输装置运行状态 (类型21)
-/// 
+///
 /// 包含设备运行状态信息
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -903,22 +920,23 @@ impl DataUnit for UploadDeviceStatus {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 设备状态 (2字节，小端序)
         buf.put_u16_le(self.device_status);
-        
+
         // 时间标签 (6字节)
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 2 + 6 { // 需要1+2+6=9字节
+        if data.len() < 1 + 2 + 6 {
+            // 需要1+2+6=9字节
             return Err(ParseError::InsufficientData {
                 expected: 9,
                 actual: data.len(),
@@ -926,7 +944,7 @@ impl DataUnit for UploadDeviceStatus {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -944,7 +962,7 @@ impl DataUnit for UploadDeviceStatus {
         offset += 2;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -967,7 +985,7 @@ impl DataUnit for UploadDeviceStatus {
 }
 
 /// 上传用户信息传输装置操作信息 (类型24)
-/// 
+///
 /// 包含设备操作信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -1008,23 +1026,24 @@ impl DataUnit for UploadDeviceOperation {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 设备操作信息对象
         let info_bytes = self.operation_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 2 + 6 { // 至少需要1+2+6=9字节 (设备操作信息是2字节)
+        if data.len() < 1 + 2 + 6 {
+            // 至少需要1+2+6=9字节 (设备操作信息是2字节)
             return Err(ParseError::InsufficientData {
                 expected: 9,
                 actual: data.len(),
@@ -1032,7 +1051,7 @@ impl DataUnit for UploadDeviceOperation {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -1046,11 +1065,11 @@ impl DataUnit for UploadDeviceOperation {
         }
 
         // 设备操作信息对象 (2字节)
-        let operation_info = crate::info_object::DeviceOperation::parse(&data[offset..offset+2])?;
+        let operation_info = crate::info_object::DeviceOperation::parse(&data[offset..offset + 2])?;
         offset += 2;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -1073,7 +1092,7 @@ impl DataUnit for UploadDeviceOperation {
 }
 
 /// 上传用户信息传输装置软件版本 (类型25)
-/// 
+///
 /// 包含设备软件版本信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -1114,23 +1133,24 @@ impl DataUnit for UploadDeviceVersion {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 设备版本信息对象
         let info_bytes = self.version_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 4 + 6 { // 至少需要1+4+6=11字节 (设备版本信息是4字节)
+        if data.len() < 1 + 4 + 6 {
+            // 至少需要1+4+6=11字节 (设备版本信息是4字节)
             return Err(ParseError::InsufficientData {
                 expected: 11,
                 actual: data.len(),
@@ -1138,7 +1158,7 @@ impl DataUnit for UploadDeviceVersion {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -1152,11 +1172,11 @@ impl DataUnit for UploadDeviceVersion {
         }
 
         // 设备版本信息对象 (4字节)
-        let version_info = crate::info_object::DeviceVersion::parse(&data[offset..offset+4])?;
+        let version_info = crate::info_object::DeviceVersion::parse(&data[offset..offset + 4])?;
         offset += 4;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -1179,7 +1199,7 @@ impl DataUnit for UploadDeviceVersion {
 }
 
 /// 上传用户信息传输装置配置情况 (类型26)
-/// 
+///
 /// 包含设备配置信息对象和时间标签
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -1220,23 +1240,24 @@ impl DataUnit for UploadDeviceConfig {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 设备配置信息对象
         let info_bytes = self.config_info.encode()?;
         buf.extend_from_slice(&info_bytes);
-        
+
         // 时间标签
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 26 + 6 { // 至少需要1+26+6=33字节 (设备配置信息是26字节)
+        if data.len() < 1 + 26 + 6 {
+            // 至少需要1+26+6=33字节 (设备配置信息是26字节)
             return Err(ParseError::InsufficientData {
                 expected: 33,
                 actual: data.len(),
@@ -1244,7 +1265,7 @@ impl DataUnit for UploadDeviceConfig {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -1258,11 +1279,11 @@ impl DataUnit for UploadDeviceConfig {
         }
 
         // 设备配置信息对象 (26字节)
-        let config_info = crate::info_object::DeviceConfig::parse(&data[offset..offset+26])?;
+        let config_info = crate::info_object::DeviceConfig::parse(&data[offset..offset + 26])?;
         offset += 26;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -1285,7 +1306,7 @@ impl DataUnit for UploadDeviceConfig {
 }
 
 /// 上传用户信息传输装置系统时间 (类型28)
-/// 
+///
 /// 包含设备系统时间信息
 #[derive(Debug, Clone, PartialEq)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -1326,23 +1347,24 @@ impl DataUnit for UploadDeviceTime {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = BytesMut::new();
-        
+
         // 信息对象数量 (1字节)
         buf.put_u8(self.object_count);
-        
+
         // 设备时间 (6字节)
         let device_time_bytes = self.device_time.encode()?;
         buf.extend_from_slice(&device_time_bytes);
-        
+
         // 时间标签 (6字节)
         let time_bytes = self.timestamp.encode()?;
         buf.extend_from_slice(&time_bytes);
-        
+
         Ok(buf.freeze())
     }
 
     fn parse(data: &[u8]) -> ParseResult<Self> {
-        if data.len() < 1 + 6 + 6 { // 需要1+6+6=13字节
+        if data.len() < 1 + 6 + 6 {
+            // 需要1+6+6=13字节
             return Err(ParseError::InsufficientData {
                 expected: 13,
                 actual: data.len(),
@@ -1350,7 +1372,7 @@ impl DataUnit for UploadDeviceTime {
         }
 
         let mut offset = 0;
-        
+
         // 信息对象数量
         let object_count = data[offset];
         offset += 1;
@@ -1364,11 +1386,11 @@ impl DataUnit for UploadDeviceTime {
         }
 
         // 设备时间 (6字节)
-        let device_time = Timestamp::parse(&data[offset..offset+6])?;
+        let device_time = Timestamp::parse(&data[offset..offset + 6])?;
         offset += 6;
 
         // 时间标签 (6字节)
-        let timestamp = Timestamp::parse(&data[offset..offset+6])?;
+        let timestamp = Timestamp::parse(&data[offset..offset + 6])?;
 
         Ok(Self {
             object_count,
@@ -1406,21 +1428,22 @@ mod tests {
             0x1234,
             Timestamp::new(30, 15, 4, 26, 11, 24).unwrap(), // 30秒,15分,4时,26日,11月,24年(2024)
         );
-        
+
         let timestamp = Timestamp::new(45, 30, 15, 4, 11, 24).unwrap(); // 45秒,30分,15时,4日,11月,24年(2024)
-        
+
         let upload = UploadSystemStatus::new(system_status, timestamp);
-        
+
         // 验证基本属性
         assert_eq!(upload.data_unit_type(), DataUnitType::UploadSystemStatus);
         assert_eq!(upload.object_count, 1);
         assert_eq!(upload.system_status.system_type, SystemType::FireAlarm);
         assert_eq!(upload.system_status.system_address, 0x12);
         assert_eq!(upload.system_status.system_state, 0x1234);
-    }    #[test]
+    }
+    #[test]
     fn test_upload_component_status_basic() {
         use crate::protocol::ComponentType;
-        
+
         let component_status = crate::info_object::ComponentStatus::new(
             SystemType::FireAlarm,
             0x12,
@@ -1430,19 +1453,19 @@ mod tests {
             [0u8; 31],
             Timestamp::new(30, 15, 4, 26, 11, 24).unwrap(),
         );
-        
+
         let timestamp = Timestamp::new(45, 30, 15, 4, 11, 24).unwrap();
         let upload = UploadComponentStatus::new(component_status, timestamp);
-        
+
         assert_eq!(upload.data_unit_type(), DataUnitType::UploadComponentStatus);
         assert_eq!(upload.object_count, 1);
     }
 
     #[test]
     fn test_upload_analog_value_basic() {
-        use crate::info_object::{AnalogValue, AnalogType};
+        use crate::info_object::{AnalogType, AnalogValue};
         use crate::protocol::ComponentType;
-        
+
         let analog_value = AnalogValue::new(
             SystemType::FireAlarm,
             0x12,
@@ -1452,10 +1475,10 @@ mod tests {
             0x1234,
             Timestamp::new(30, 15, 4, 26, 11, 24).unwrap(),
         );
-        
+
         let timestamp = Timestamp::new(45, 30, 15, 4, 11, 24).unwrap();
         let upload = UploadAnalogValue::new(analog_value, timestamp);
-        
+
         assert_eq!(upload.data_unit_type(), DataUnitType::UploadAnalogValue);
         assert_eq!(upload.object_count, 1);
     }
@@ -1466,11 +1489,11 @@ mod tests {
             0x0001, // 设备状态
             Timestamp::new(45, 30, 15, 4, 11, 24).unwrap(),
         );
-        
+
         // 编码
         let encoded = upload.encode().unwrap();
         assert_eq!(encoded.len(), 9); // 1 + 2 + 6
-        
+
         // 解码
         let decoded = UploadDeviceStatus::parse(&encoded).unwrap();
         assert_eq!(upload, decoded);
@@ -1481,13 +1504,13 @@ mod tests {
     fn test_upload_system_time_encode_decode() {
         let system_time = Timestamp::new(30, 15, 4, 26, 11, 24).unwrap();
         let timestamp = Timestamp::new(45, 30, 15, 4, 11, 24).unwrap();
-        
+
         let upload = UploadSystemTime::new(system_time, timestamp);
-        
+
         // 编码
         let encoded = upload.encode().unwrap();
         assert_eq!(encoded.len(), 13); // 1 + 6 + 6
-        
+
         // 解码
         let decoded = UploadSystemTime::parse(&encoded).unwrap();
         assert_eq!(upload, decoded);
@@ -1499,13 +1522,13 @@ mod tests {
     fn test_upload_device_time_encode_decode() {
         let device_time = Timestamp::new(30, 15, 4, 26, 11, 24).unwrap();
         let timestamp = Timestamp::new(45, 30, 15, 4, 11, 24).unwrap();
-        
+
         let upload = UploadDeviceTime::new(device_time, timestamp);
-        
+
         // 编码
         let encoded = upload.encode().unwrap();
         assert_eq!(encoded.len(), 13); // 1 + 6 + 6
-        
+
         // 解码
         let decoded = UploadDeviceTime::parse(&encoded).unwrap();
         assert_eq!(upload, decoded);

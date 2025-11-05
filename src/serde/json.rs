@@ -4,9 +4,9 @@
 
 #[cfg(feature = "serde")]
 use crate::{
-    frame::Packet,
     data_unit::GenericDataUnit,
     error::{EncodeError, ParseError},
+    frame::Packet,
 };
 
 #[cfg(feature = "serde")]
@@ -25,10 +25,10 @@ impl JsonSerializer {
     }
 
     /// 将数据包序列化为 JSON
-    /// 
+    ///
     /// # Arguments
     /// * `packet` - 要序列化的数据包
-    /// 
+    ///
     /// # Returns
     /// * `Result<String, EncodeError>` - 成功返回 JSON 字符串
     pub fn serialize_packet(&self, packet: &Packet) -> Result<String, EncodeError> {
@@ -38,10 +38,10 @@ impl JsonSerializer {
     }
 
     /// 将数据包序列化为格式化的 JSON
-    /// 
+    ///
     /// # Arguments
     /// * `packet` - 要序列化的数据包
-    /// 
+    ///
     /// # Returns
     /// * `Result<String, EncodeError>` - 成功返回格式化的 JSON 字符串
     pub fn serialize_packet_pretty(&self, packet: &Packet) -> Result<String, EncodeError> {
@@ -51,10 +51,10 @@ impl JsonSerializer {
     }
 
     /// 从 JSON 反序列化数据包
-    /// 
+    ///
     /// # Arguments
     /// * `json` - JSON 字符串
-    /// 
+    ///
     /// # Returns
     /// * `Result<Packet, ParseError>` - 成功返回数据包
     pub fn deserialize_packet(&self, json: &str) -> Result<Packet, ParseError> {
@@ -64,10 +64,10 @@ impl JsonSerializer {
     }
 
     /// 将数据单元序列化为 JSON
-    /// 
+    ///
     /// # Arguments
     /// * `data_unit` - 要序列化的数据单元
-    /// 
+    ///
     /// # Returns
     /// * `Result<String, EncodeError>` - 成功返回 JSON 字符串
     pub fn serialize_data_unit(&self, data_unit: &GenericDataUnit) -> Result<String, EncodeError> {
@@ -77,23 +77,26 @@ impl JsonSerializer {
     }
 
     /// 将数据单元序列化为格式化的 JSON
-    /// 
+    ///
     /// # Arguments
     /// * `data_unit` - 要序列化的数据单元
-    /// 
+    ///
     /// # Returns
     /// * `Result<String, EncodeError>` - 成功返回格式化的 JSON 字符串
-    pub fn serialize_data_unit_pretty(&self, data_unit: &GenericDataUnit) -> Result<String, EncodeError> {
+    pub fn serialize_data_unit_pretty(
+        &self,
+        data_unit: &GenericDataUnit,
+    ) -> Result<String, EncodeError> {
         serde_json::to_string_pretty(data_unit).map_err(|e| EncodeError::SerializationError {
             reason: e.to_string(),
         })
     }
 
     /// 从 JSON 反序列化数据单元
-    /// 
+    ///
     /// # Arguments
     /// * `json` - JSON 字符串
-    /// 
+    ///
     /// # Returns
     /// * `Result<GenericDataUnit, ParseError>` - 成功返回数据单元
     pub fn deserialize_data_unit(&self, json: &str) -> Result<GenericDataUnit, ParseError> {
@@ -108,10 +111,10 @@ impl JsonSerializer {
 mod tests {
     use super::*;
     use crate::{
-        frame::{ControlUnit, Timestamp},
-        protocol::{Command, ProtocolVersion},
         data_unit::standard::SystemStatus,
+        frame::{ControlUnit, Timestamp},
         protocol::SystemType,
+        protocol::{Command, ProtocolVersion},
     };
 
     #[test]

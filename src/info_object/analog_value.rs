@@ -2,14 +2,14 @@
 //!
 //! 根据 GB26875 协议第8.2.1节实现的模拟量值信息对象，用于上传建筑消防设施部件的模拟量值。
 
-use bytes::Bytes;
-use crate::error::{ParseResult, EncodeResult};
-use crate::frame::timestamp::Timestamp;
-use crate::protocol::types::{SystemType, ComponentType};
 use super::InfoObject;
+use crate::error::{EncodeResult, ParseResult};
+use crate::frame::timestamp::Timestamp;
+use crate::protocol::types::{ComponentType, SystemType};
+use bytes::Bytes;
 
 /// 模拟量类型定义
-/// 
+///
 /// 根据GB26875协议8.2.1节定义的标准模拟量类型
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[repr(u8)]
@@ -65,11 +65,11 @@ impl AnalogType {
 }
 
 /// 建筑消防设施部件模拟量值 (10字节信息体 + 6字节时间戳)
-/// 
+///
 /// 根据GB26875协议8.2.1节定义，用于上传建筑消防设施部件模拟量值信息
-/// 
+///
 /// ## 字段布局
-/// 
+///
 /// | 字段名        | 字节数 | 说明                     |
 /// |--------------|-------|--------------------------|
 /// | 系统类型标志   | 1     | 建筑消防设施系统类型        |
@@ -79,14 +79,14 @@ impl AnalogType {
 /// | 模拟量类型    | 1     | 模拟量类型标识            |
 /// | 模拟量值      | 2     | 模拟量值(有符号,小端序)     |
 /// | 值变化时间    | 6     | 时间戳                   |
-/// 
+///
 /// ## 示例
-/// 
+///
 /// ```rust
 /// use gb26875::info_object::analog_value::{AnalogValue, AnalogType};
 /// use gb26875::protocol::types::{SystemType, ComponentType};
 /// use gb26875::frame::timestamp::Timestamp;
-/// 
+///
 /// let analog_value = AnalogValue::new(
 ///     SystemType::FireAlarm,
 ///     1,                              // 系统地址
@@ -142,14 +142,14 @@ impl InfoObject for AnalogValue {
     fn object_type(&self) -> u8 {
         3 // 上传建筑消防设施部件模拟量值
     }
-    
+
     fn description(&self) -> Option<&str> {
         Some("建筑消防设施部件模拟量值")
     }
-    
+
     fn encode(&self) -> EncodeResult<Bytes> {
         let mut buf = Vec::with_capacity(16); // 10字节信息体 + 6字节时间戳
-        
+
         // 信息体 (10字节)
         buf.push(self.system_type.to_u8());
         buf.push(self.system_address);
@@ -157,21 +157,21 @@ impl InfoObject for AnalogValue {
         buf.extend_from_slice(&self.component_address.to_le_bytes()); // 4字节，小端序
         buf.push(self.analog_type as u8);
         buf.extend_from_slice(&self.analog_value.to_le_bytes()); // 2字节有符号，小端序
-        
+
         // 时间戳 (6字节)
         buf.extend_from_slice(&self.timestamp.to_bytes());
-        
+
         Ok(Bytes::from(buf))
     }
-    
+
     fn parse(data: &[u8]) -> ParseResult<Self> {
         if data.len() < 16 {
-            return Err(crate::error::ParseError::TooShort { 
-                expected: 16, 
-                actual: data.len() 
+            return Err(crate::error::ParseError::TooShort {
+                expected: 16,
+                actual: data.len(),
             });
         }
-        
+
         let system_type = SystemType::from_u8(data[0]);
         let system_address = data[1];
         let component_type = ComponentType::from_u8(data[2]);
@@ -180,7 +180,7 @@ impl InfoObject for AnalogValue {
             .ok_or(crate::error::ParseError::InvalidAnalogType(data[7]))?;
         let analog_value = i16::from_le_bytes([data[8], data[9]]);
         let timestamp = Timestamp::from_bytes(&data[10..16])?;
-        
+
         Ok(AnalogValue::new(
             system_type,
             system_address,
@@ -191,7 +191,7 @@ impl InfoObject for AnalogValue {
             timestamp,
         ))
     }
-    
+
     fn timestamp(&self) -> Option<&Timestamp> {
         Some(&self.timestamp)
     }
@@ -200,7 +200,7 @@ impl InfoObject for AnalogValue {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::types::{SystemType, ComponentType};
+    use crate::protocol::types::{ComponentType, SystemType};
 
     #[test]
     fn test_analog_value_encode_decode() {
@@ -212,7 +212,7 @@ mod tests {
             0x12345678,
             AnalogType::Temperature,
             250,
-            timestamp
+            timestamp,
         );
 
         // 测试编码
@@ -234,7 +234,8 @@ mod tests {
         // 测试转换为u8
         assert_eq!(AnalogType::Temperature as u8, 3);
         assert_eq!(AnalogType::Voltage as u8, 8);
-    }    #[test]
+    }
+    #[test]
     fn test_analog_value_fields() {
         let timestamp = Timestamp::now();
         let analog_value = AnalogValue::new(
@@ -244,13 +245,16 @@ mod tests {
             0xABCDEF12,
             AnalogType::PressureKPa,
             1500,
-            timestamp
+            timestamp,
         );
 
         assert_eq!(analog_value.object_type(), 3);
         assert_eq!(analog_value.system_type, SystemType::FireAlarm);
         assert_eq!(analog_value.system_address, 2);
-        assert_eq!(analog_value.component_type, ComponentType::TemperatureFireDetector);
+        assert_eq!(
+            analog_value.component_type,
+            ComponentType::TemperatureFireDetector
+        );
         assert_eq!(analog_value.component_address, 0xABCDEF12);
         assert_eq!(analog_value.analog_type, AnalogType::PressureKPa);
         assert_eq!(analog_value.analog_value, 1500);

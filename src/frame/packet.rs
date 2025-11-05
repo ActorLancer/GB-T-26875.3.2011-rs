@@ -3,13 +3,13 @@
 //! 数据包是 GB26875 协议的完整通信单元，包含启动符、控制单元、
 //! 应用数据单元（可选）、校验和、结束符
 
-use crate::error::{ParseError, ParseResult, EncodeError, EncodeResult};
-use crate::frame::{ControlUnit, calculate_checksum};
+use crate::error::{EncodeError, EncodeResult, ParseError, ParseResult};
+use crate::frame::{calculate_checksum, ControlUnit};
 use crate::protocol::constants::*;
 use bytes::{BufMut, Bytes, BytesMut};
 
 /// GB26875 数据包
-/// 
+///
 /// 完整的GB26875 协议数据包结构：
 /// - 启动符（2字节）: 0x40 0x40
 /// - 控制单元（25字节）
@@ -27,21 +27,21 @@ pub struct Packet {
 
 impl Packet {
     /// 创建新的数据包
-    /// 
+    ///
     /// # Arguments
     /// * `control_unit` - 控制单元
     /// * `data_unit` - 应用数据单元（可选）
-    /// 
+    ///
     /// # Returns
     /// * `EncodeResult<Self>` - 创建的数据包或编码错误
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use gb26875::prelude::*;
     /// use bytes::Bytes;
-    /// 
+    ///
     /// let control_unit = ControlUnit::new(
-    ///     1, 
+    ///     1,
     ///     ProtocolVersion::standard(),
     ///     Timestamp::now(),
     ///     0x123456,
@@ -73,21 +73,21 @@ impl Packet {
     }
 
     /// 创建包含数据的数据包
-    /// 
+    ///
     /// # Arguments
     /// * `control_unit` - 控制单元
     /// * `data` - 应用数据单元
-    /// 
+    ///
     /// # Returns
     /// * `EncodeResult<Self>` - 创建的数据包或编码错误
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use gb26875::prelude::*;
     /// use bytes::Bytes;
-    /// 
+    ///
     /// let control_unit = ControlUnit::new(
-    ///     1, 
+    ///     1,
     ///     ProtocolVersion::standard(),
     ///     Timestamp::now(),
     ///     0x123456,
@@ -95,7 +95,7 @@ impl Packet {
     ///     0,
     ///     Command::SendData
     /// )?;
-    /// 
+    ///
     /// let data = Bytes::from_static(b"test data");
     /// let packet = Packet::with_data(control_unit, data)?;
     /// # Ok::<(), gb26875::error::EncodeError>(())
@@ -124,7 +124,7 @@ impl Packet {
         25 +                         // 控制单元（25字节）
         self.control_unit.data_unit_len as usize + // 应用数据单元
         1 +                          // 校验和（1字节）
-        FRAME_END.len()              // 结束符（2字节）
+        FRAME_END.len() // 结束符（2字节）
     }
 
     /// 检查数据包是否为空（无数据单元）
@@ -158,10 +158,10 @@ impl Packet {
     }
 
     /// 创建空数据包（仅控制单元）
-    /// 
+    ///
     /// # Arguments
     /// * `control_unit` - 控制单元
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 创建的空数据包
     pub fn empty(mut control_unit: ControlUnit) -> Self {
@@ -173,17 +173,17 @@ impl Packet {
     }
 
     /// 编码数据包为字节序列
-    /// 
+    ///
     /// # Returns
     /// * `EncodeResult<Bytes>` - 编码后的字节序列或编码错误
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use gb26875::prelude::*;
     /// use bytes::Bytes;
-    /// 
+    ///
     /// let control_unit = ControlUnit::new(
-    ///     1, 
+    ///     1,
     ///     ProtocolVersion::standard(),
     ///     Timestamp::now(),
     ///     0x123456,
@@ -191,7 +191,7 @@ impl Packet {
     ///     0,
     ///     Command::SendData
     /// )?;
-    /// 
+    ///
     /// let packet = Packet::empty(control_unit);
     /// let encoded = packet.encode()?;
     /// # Ok::<(), gb26875::error::EncodeError>(())
@@ -224,8 +224,8 @@ impl Packet {
 
         // 计算校验和（不包括启动符、结束符和校验和本身）
         let checksum_data = &buf[FRAME_START.len()..];
-        let control_unit_bytes = &checksum_data[0..25];  // 控制单元25字节
-        let data_unit_bytes = &checksum_data[25..];      // 剩余为数据单元
+        let control_unit_bytes = &checksum_data[0..25]; // 控制单元25字节
+        let data_unit_bytes = &checksum_data[25..]; // 剩余为数据单元
         let checksum = calculate_checksum(control_unit_bytes, data_unit_bytes);
         buf.put_u8(checksum);
 
@@ -236,20 +236,20 @@ impl Packet {
     }
 
     /// 从字节序列解析数据包
-    /// 
+    ///
     /// # Arguments
     /// * `data` - 包含数据包的字节序列
-    /// 
+    ///
     /// # Returns
     /// * `ParseResult<Self>` - 解析的数据包或解析错误
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use gb26875::prelude::*;
     /// use bytes::Bytes;
-    /// 
+    ///
     /// let control_unit = ControlUnit::new(
-    ///     1, 
+    ///     1,
     ///     ProtocolVersion::standard(),
     ///     Timestamp::now(),
     ///     0x123456,
@@ -257,7 +257,7 @@ impl Packet {
     ///     0,
     ///     Command::SendData
     /// )?;
-    /// 
+    ///
     /// let original = Packet::empty(control_unit);
     /// let encoded = original.encode()?;
     /// let decoded = Packet::from_bytes(&encoded)?;
@@ -278,7 +278,10 @@ impl Packet {
 
         // 验证启动符
         if &data[cursor..cursor + FRAME_START.len()] != FRAME_START {
-            return Err(ParseError::InvalidStartMarker(data[cursor], data[cursor + 1]));
+            return Err(ParseError::InvalidStartMarker(
+                data[cursor],
+                data[cursor + 1],
+            ));
         }
         cursor += FRAME_START.len();
 
@@ -290,7 +293,8 @@ impl Packet {
         let data_unit_len = control_unit.data_unit_len as usize;
         let data_unit = if data_unit_len > 0 {
             // 检查是否有足够的数据
-            if cursor + data_unit_len + 3 > data.len() { // +3 for checksum(1) + end_marker(2)
+            if cursor + data_unit_len + 3 > data.len() {
+                // +3 for checksum(1) + end_marker(2)
                 return Err(ParseError::TooShort {
                     actual: data.len(),
                     expected: cursor + data_unit_len + 3,
@@ -321,7 +325,7 @@ impl Packet {
         let control_unit_bytes = &checksum_data[0..25];
         let data_unit_bytes = &checksum_data[25..];
         let calculated_checksum = calculate_checksum(control_unit_bytes, data_unit_bytes);
-        
+
         if expected_checksum != calculated_checksum {
             return Err(ParseError::ChecksumMismatch {
                 expected: expected_checksum,
@@ -348,10 +352,10 @@ impl Packet {
     }
 
     /// 解析数据包（from_bytes的别名，为了兼容性）
-    /// 
+    ///
     /// # Arguments
     /// * `data` - 包含数据包的字节序列
-    /// 
+    ///
     /// # Returns
     /// * `ParseResult<Self>` - 解析的数据包或解析错误
     pub fn parse(data: &[u8]) -> ParseResult<Self> {
@@ -359,10 +363,10 @@ impl Packet {
     }
 
     /// 尝试解析数据包，返回解析结果和消耗的字节数
-    /// 
+    ///
     /// # Arguments
     /// * `data` - 包含数据包的字节序列
-    /// 
+    ///
     /// # Returns
     /// * `ParseResult<(Self, usize)>` - 解析的数据包和消耗的字节数，或解析错误
     pub fn try_parse(data: &[u8]) -> ParseResult<(Self, usize)> {
@@ -379,7 +383,10 @@ impl Packet {
 
         // 验证启动符
         if &data[cursor..cursor + FRAME_START.len()] != FRAME_START {
-            return Err(ParseError::InvalidStartMarker(data[cursor], data[cursor + 1]));
+            return Err(ParseError::InvalidStartMarker(
+                data[cursor],
+                data[cursor + 1],
+            ));
         }
         cursor += FRAME_START.len();
 
@@ -390,7 +397,7 @@ impl Packet {
         // 计算预期的数据包总长度
         let data_unit_len = control_unit.data_unit_len as usize;
         let expected_total_len = FRAME_START.len() + 25 + data_unit_len + 1 + FRAME_END.len();
-        
+
         // 检查是否有足够的数据
         if data.len() < expected_total_len {
             return Err(ParseError::TooShort {
@@ -425,7 +432,7 @@ impl Packet {
         let control_unit_bytes = &checksum_data[0..25];
         let data_unit_bytes = &checksum_data[25..];
         let calculated_checksum = calculate_checksum(control_unit_bytes, data_unit_bytes);
-        
+
         if expected_checksum != calculated_checksum {
             return Err(ParseError::ChecksumMismatch {
                 expected: expected_checksum,
@@ -455,7 +462,7 @@ impl Packet {
     }
 
     /// 验证数据包是否有效
-    /// 
+    ///
     /// # Returns
     /// * `ParseResult<()>` - 验证成功或验证错误
     pub fn validate(&self) -> ParseResult<()> {
@@ -483,21 +490,21 @@ impl Packet {
     }
 
     /// 创建应答数据包
-    /// 
+    ///
     /// # Arguments
     /// * `response_data` - 应答数据（可选）
-    /// 
+    ///
     /// # Returns
     /// * `EncodeResult<Self>` - 应答数据包或编码错误
     pub fn create_response(&self, response_data: Option<Bytes>) -> EncodeResult<Self> {
         let data_len = response_data.as_ref().map(|d| d.len()).unwrap_or(0);
         let response_control_unit = self.control_unit.create_response(data_len as u16);
-        
+
         Self::new(response_control_unit, response_data)
     }
 
     /// 创建确认数据包
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 确认数据包
     pub fn create_acknowledge(&self) -> Self {
@@ -506,7 +513,7 @@ impl Packet {
     }
 
     /// 创建否认数据包
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 否认数据包
     pub fn create_reject(&self) -> Self {
@@ -523,7 +530,10 @@ impl Packet {
 
     /// 检查是否为确认包
     pub fn is_acknowledge(&self) -> bool {
-        matches!(self.control_unit.command, crate::protocol::Command::Acknowledge)
+        matches!(
+            self.control_unit.command,
+            crate::protocol::Command::Acknowledge
+        )
     }
 
     /// 检查是否为否认包
@@ -555,8 +565,8 @@ impl std::fmt::Display for Packet {
 #[cfg(test)]
 mod tests {
     use super::*;
-    use crate::protocol::{Command, ProtocolVersion};
     use crate::frame::Timestamp;
+    use crate::protocol::{Command, ProtocolVersion};
 
     fn create_test_control_unit() -> ControlUnit {
         ControlUnit::new(
@@ -567,14 +577,15 @@ mod tests {
             0x654321,
             0,
             Command::SendData,
-        ).unwrap()
+        )
+        .unwrap()
     }
 
     #[test]
     fn test_packet_creation() {
         let control_unit = create_test_control_unit();
         let packet = Packet::empty(control_unit.clone());
-        
+
         assert_eq!(packet.control_unit, control_unit);
         assert!(packet.data_unit.is_none());
         assert!(packet.is_empty());
@@ -585,7 +596,7 @@ mod tests {
         let control_unit = create_test_control_unit();
         let data = Bytes::from_static(b"test data");
         let packet = Packet::with_data(control_unit, data.clone()).unwrap();
-        
+
         assert_eq!(packet.data_unit(), Some(&data));
         assert!(!packet.is_empty());
         assert_eq!(packet.control_unit.data_unit_len, data.len() as u16);
@@ -595,10 +606,10 @@ mod tests {
     fn test_packet_encode_decode() {
         let control_unit = create_test_control_unit();
         let original = Packet::empty(control_unit);
-        
+
         let encoded = original.encode().unwrap();
         let decoded = Packet::from_bytes(&encoded).unwrap();
-        
+
         assert_eq!(original, decoded);
     }
 
@@ -607,7 +618,7 @@ mod tests {
         let control_unit = create_test_control_unit();
         let large_data = vec![0u8; MAX_DATA_UNIT_SIZE + 1];
         let data = Bytes::from(large_data);
-        
+
         let result = Packet::with_data(control_unit, data);
         assert!(matches!(result, Err(EncodeError::DataUnitTooLarge { .. })));
     }
@@ -616,7 +627,7 @@ mod tests {
     fn test_packet_validation() {
         let control_unit = create_test_control_unit();
         let packet = Packet::empty(control_unit);
-        
+
         assert!(packet.validate().is_ok());
     }
 
@@ -624,10 +635,10 @@ mod tests {
     fn test_packet_responses() {
         let control_unit = create_test_control_unit();
         let packet = Packet::empty(control_unit);
-        
+
         let ack = packet.create_acknowledge();
         assert!(ack.is_acknowledge());
-        
+
         let reject = packet.create_reject();
         assert!(reject.is_reject());
     }

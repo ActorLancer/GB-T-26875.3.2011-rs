@@ -10,7 +10,7 @@ use crate::error::{ParseError, ParseResult};
 use crate::protocol::DataUnitType;
 
 /// 数据单元标识符
-/// 
+///
 /// 包含数据单元类型标识和相关的解析功能
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 #[cfg_attr(feature = "serde", derive(serde::Serialize, serde::Deserialize))]
@@ -26,7 +26,7 @@ impl DataUnitIdentifier {
     pub fn new(data_unit_type: DataUnitType) -> Self {
         let type_value = data_unit_type.to_u8();
         let is_custom = type_value >= 128 && type_value <= 254;
-        
+
         Self {
             data_unit_type,
             is_custom,
@@ -88,7 +88,7 @@ impl DataUnitIdentifier {
         //     // 预留
         //     DataUnitType::Reserved => "预留".to_string(),
         //     DataUnitType::FireSystemReserved(n) => format!("建筑消防设施预留类型 {}", n),
-            
+
         //     // 上行数据单元 (1-28)
         //     DataUnitType::UploadSystemStatus => "上传建筑消防设施系统状态".to_string(),
         //     DataUnitType::UploadComponentStatus => "上传建筑消防设施部件运行状态".to_string(),
@@ -99,7 +99,7 @@ impl DataUnitIdentifier {
         //     DataUnitType::UploadComponentConfig => "上传建筑消防设施部件配置".to_string(),
         //     DataUnitType::UploadSystemTime => "上传建筑消防设施系统时间".to_string(),
         //     DataUnitType::UploadDeviceStatus => "上传用户信息传输装置状态".to_string(),
-            
+
         //     // 下行数据单元 (61-91)
         //     DataUnitType::ReadSystemStatus => "读建筑消防设施系统状态".to_string(),
         //     DataUnitType::ReadComponentStatus => "读建筑消防设施部件运行状态".to_string(),
@@ -133,16 +133,16 @@ impl std::fmt::Display for DataUnitIdentifier {
 }
 
 /// 数据单元标识符解析器
-/// 
+///
 /// 用于从字节流中解析数据单元标识符
 pub struct DataUnitIdentifierParser;
 
 impl DataUnitIdentifierParser {
     /// 从字节流中解析标识符
-    /// 
+    ///
     /// # Arguments
     /// * `data` - 包含标识符的字节数据
-    /// 
+    ///
     /// # Returns
     /// * `ParseResult<(DataUnitIdentifier, usize)>` - 解析结果和消耗的字节数
     pub fn parse(data: &[u8]) -> ParseResult<(DataUnitIdentifier, usize)> {

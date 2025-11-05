@@ -2,10 +2,10 @@
 //!
 //! 展示如何使用构建器API创建不同类型的数据单元
 
-use gb26875::prelude::*;
-use gb26875::protocol::types::{SystemType, ComponentType, DataUnitType};
 use gb26875::frame::Timestamp;
 use gb26875::info_object::analog_value::AnalogType;
+use gb26875::prelude::*;
+use gb26875::protocol::types::{ComponentType, DataUnitType, SystemType};
 
 fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("GB26875 数据单元构建器演示");
@@ -17,13 +17,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .system_status()
         .system_type(SystemType::FireAlarm)
         .system_address(1)
-        .system_state(0x0002)  // 火警状态
+        .system_state(0x0002) // 火警状态
         .timestamp(Timestamp::now())
         .build()?;
 
     println!("   类型: {:?}", system_status_unit.data_unit_type());
     println!("   上行数据单元: {}", system_status_unit.is_upstream());
-    println!("   编码后字节长度: {} 字节", system_status_unit.encode()?.len());
+    println!(
+        "   编码后字节长度: {} 字节",
+        system_status_unit.encode()?.len()
+    );
 
     // 示例2：构建上传部件状态数据单元
     println!("\n2. 构建上传部件状态数据单元");
@@ -33,14 +36,17 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .system_address(1)
         .component_type(ComponentType::SmokeFireDetector)
         .component_address(0x12345678)
-        .component_state(0x0002)  // 火警状态
+        .component_state(0x0002) // 火警状态
         .description("一层大厅烟雾探测器")
         .timestamp(Timestamp::now())
         .build()?;
 
     println!("   类型: {:?}", component_status_unit.data_unit_type());
     println!("   上行数据单元: {}", component_status_unit.is_upstream());
-    println!("   编码后字节长度: {} 字节", component_status_unit.encode()?.len());
+    println!(
+        "   编码后字节长度: {} 字节",
+        component_status_unit.encode()?.len()
+    );
 
     // 示例3：构建上传模拟量值数据单元
     println!("\n3. 构建上传模拟量值数据单元");
@@ -51,13 +57,16 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
         .component_type(ComponentType::TemperatureFireDetector)
         .component_address(0x87654321)
         .analog_type(AnalogType::Temperature)
-        .analog_value(250)  // 25.0°C (0.1°C精度)
+        .analog_value(250) // 25.0°C (0.1°C精度)
         .timestamp(Timestamp::now())
         .build()?;
 
     println!("   类型: {:?}", analog_value_unit.data_unit_type());
     println!("   上行数据单元: {}", analog_value_unit.is_upstream());
-    println!("   编码后字节长度: {} 字节", analog_value_unit.encode()?.len());
+    println!(
+        "   编码后字节长度: {} 字节",
+        analog_value_unit.encode()?.len()
+    );
 
     // 示例4：验证数据单元
     println!("\n4. 验证数据单元");
@@ -75,9 +84,9 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
     println!("\n6. 链式调用示例");
     let _flexible_unit = DataUnitBuilder::new(DataUnitType::UploadSystemStatus)
         .system_status()
-        .system_type(SystemType::AutoSprinkler)  // 自动喷水
+        .system_type(SystemType::AutoSprinkler) // 自动喷水
         .system_address(2)
-        .system_state(0x0001)  // 正常状态
+        .system_state(0x0001) // 正常状态
         .timestamp(Timestamp::now())
         .build()?;
 

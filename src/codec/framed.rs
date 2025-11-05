@@ -2,16 +2,16 @@
 //!
 //! 为GB26875协议提供tokio-util的Framed支持，用于异步网络通信
 
-use crate::error::{ParseError, ParseResult, EncodeError, EncodeResult};
+use crate::error::{EncodeError, EncodeResult, ParseError, ParseResult};
 use crate::frame::Packet;
-use bytes::{Bytes, BytesMut, Buf, BufMut};
+use bytes::{Buf, BufMut, Bytes, BytesMut};
 use std::io;
 
 #[cfg(feature = "async")]
 use tokio_util::codec::{Decoder, Encoder};
 
 /// GB26875 Framed Codec
-/// 
+///
 /// 实现 tokio-util 的 Codec trait，用于在异步流中处理 GB26875 数据包
 #[derive(Debug, Clone)]
 pub struct GB26875FramedCodec {
@@ -69,7 +69,7 @@ impl GB26875FramedCodec {
         }
 
         let data_length = u16::from_le_bytes([buf[22], buf[23]]) as usize;
-        
+
         // 计算完整数据包长度：控制单元(25字节) + 应用数据单元(data_length字节) + 校验和(1字节) + 结束符(1字节)
         let total_length = 25 + data_length + 1 + 1;
 
@@ -116,7 +116,7 @@ impl Decoder for GB26875FramedCodec {
             Ok(Some(frame_length)) => {
                 // 提取完整的帧数据
                 let frame_data = src.split_to(frame_length);
-                
+
                 // 解析数据包
                 match Packet::parse(&frame_data) {
                     Ok(packet) => Ok(Some(packet)),
@@ -147,10 +147,10 @@ impl Encoder<Packet> for GB26875FramedCodec {
                 if self.validate_length && encoded.len() > self.max_frame_length {
                     return Err(io::Error::new(
                         io::ErrorKind::InvalidData,
-                        format!("数据包过大: {} > {}", encoded.len(), self.max_frame_length)
+                        format!("数据包过大: {} > {}", encoded.len(), self.max_frame_length),
                     ));
                 }
-                
+
                 dst.reserve(encoded.len());
                 dst.put_slice(&encoded);
                 Ok(())
@@ -161,7 +161,7 @@ impl Encoder<Packet> for GB26875FramedCodec {
 }
 
 /// 长度字段编解码器
-/// 
+///
 /// 使用数据包中的长度字段来确定帧边界，提供更高效的帧检测
 #[derive(Debug, Clone)]
 pub struct LengthFieldCodec {
@@ -179,9 +179,9 @@ impl LengthFieldCodec {
     /// 创建GB26875专用的长度字段编解码器
     pub fn new_gb26875() -> Self {
         LengthFieldCodec {
-            length_field_offset: 22,    // 长度字段在第22-23字节
-            length_field_length: 2,     // 长度字段为2字节
-            length_adjustment: 27,      // 控制单元(25) + 校验和(1) + 结束符(1) = 27
+            length_field_offset: 22, // 长度字段在第22-23字节
+            length_field_length: 2,  // 长度字段为2字节
+            length_adjustment: 27,   // 控制单元(25) + 校验和(1) + 结束符(1) = 27
             max_frame_length: 8192,
         }
     }
@@ -204,27 +204,38 @@ impl LengthFieldCodec {
     /// 尝试解码帧长度
     fn decode_frame_length(&self, buf: &BytesMut) -> ParseResult<Option<usize>> {
         let required_bytes = self.length_field_offset + self.length_field_length;
-        
+
         if buf.len() < required_bytes {
             return Ok(None);
         }
 
-        let length_bytes = &buf[self.length_field_offset..self.length_field_offset + self.length_field_length];
-        
+        let length_bytes =
+            &buf[self.length_field_offset..self.length_field_offset + self.length_field_length];
+
         let field_value = match self.length_field_length {
             1 => length_bytes[0] as u64,
             2 => u16::from_le_bytes([length_bytes[0], length_bytes[1]]) as u64,
             4 => u32::from_le_bytes([
-                length_bytes[0], length_bytes[1], 
-                length_bytes[2], length_bytes[3]
+                length_bytes[0],
+                length_bytes[1],
+                length_bytes[2],
+                length_bytes[3],
             ]) as u64,
             8 => u64::from_le_bytes([
-                length_bytes[0], length_bytes[1], length_bytes[2], length_bytes[3],
-                length_bytes[4], length_bytes[5], length_bytes[6], length_bytes[7]
+                length_bytes[0],
+                length_bytes[1],
+                length_bytes[2],
+                length_bytes[3],
+                length_bytes[4],
+                length_bytes[5],
+                length_bytes[6],
+                length_bytes[7],
             ]),
-            _ => return Err(ParseError::InvalidLengthFieldSize { 
-                size: self.length_field_length 
-            }),
+            _ => {
+                return Err(ParseError::InvalidLengthFieldSize {
+                    size: self.length_field_length,
+                })
+            }
         };
 
         let frame_length = (field_value as isize + self.length_adjustment) as usize;
@@ -267,7 +278,7 @@ impl Decoder for LengthFieldCodec {
 }
 
 /// 流式数据包处理器
-/// 
+///
 /// 提供流式处理多个数据包的功能，处理TCP流中的粘包问题
 #[derive(Debug)]
 pub struct StreamProcessor {
@@ -323,11 +334,11 @@ impl StreamProcessor {
     /// 解析所有可用的数据包
     pub fn decode_all(&mut self) -> ParseResult<Vec<Packet>> {
         let mut packets = Vec::new();
-        
+
         while let Some(packet) = self.try_decode()? {
             packets.push(packet);
         }
-        
+
         Ok(packets)
     }
 
@@ -389,13 +400,13 @@ pub struct StreamStats {
 mod tests {
     use super::*;
     use crate::frame::{Header, TimeStamp};
-    use crate::protocol::{CommandCode, constants::*};
+    use crate::protocol::{constants::*, CommandCode};
 
     #[test]
     fn test_gb26875_framed_codec_creation() {
         let codec = GB26875FramedCodec::new();
         assert_eq!(codec.max_frame_length(), 8192);
-        
+
         let codec = GB26875FramedCodec::with_max_length(4096);
         assert_eq!(codec.max_frame_length(), 4096);
     }
@@ -413,7 +424,7 @@ mod tests {
         let processor = StreamProcessor::new();
         assert_eq!(processor.buffer().len(), 0);
         assert_eq!(processor.stats().packet_count, 0);
-        
+
         let processor = StreamProcessor::with_capacity(1024);
         assert!(processor.buffer.capacity() >= 1024);
     }
@@ -422,7 +433,7 @@ mod tests {
     fn test_stream_processor_feed() {
         let mut processor = StreamProcessor::new();
         let data = [0x40, 0x40, 0x01, 0x02];
-        
+
         processor.feed(&data);
         assert_eq!(processor.buffer().len(), 4);
         assert_eq!(processor.stats().bytes_processed, 4);
@@ -432,7 +443,7 @@ mod tests {
     fn test_stream_processor_clear() {
         let mut processor = StreamProcessor::new();
         processor.feed(&[1, 2, 3, 4]);
-        
+
         processor.clear();
         assert_eq!(processor.buffer().len(), 0);
     }
@@ -442,11 +453,11 @@ mod tests {
         let mut processor = StreamProcessor::new();
         processor.feed(&[1, 2, 3]);
         processor.feed(&[4, 5]);
-        
+
         let stats = processor.stats();
         assert_eq!(stats.bytes_processed, 5);
         assert_eq!(stats.buffer_size, 5);
-        
+
         processor.reset_stats();
         let stats = processor.stats();
         assert_eq!(stats.packet_count, 0);
@@ -457,10 +468,10 @@ mod tests {
     #[tokio::test]
     async fn test_framed_codec_encode() {
         use tokio_util::codec::Encoder;
-        
+
         let mut codec = GB26875FramedCodec::new();
         let mut dst = BytesMut::new();
-        
+
         // 创建一个测试数据包
         let header = Header {
             start_marker: START_MARKER,
@@ -472,14 +483,14 @@ mod tests {
             command_code: CommandCode::ConfirmTestCommand,
             serial_number: 1,
         };
-        
+
         let packet = Packet {
             header,
             application_data_unit: vec![],
             checksum: 0,
             end_marker: END_MARKER,
         };
-        
+
         let result = codec.encode(packet, &mut dst);
         assert!(result.is_ok());
         assert!(!dst.is_empty());

@@ -586,15 +586,15 @@ impl AnalogType {
         match self {
             Self::Unused => None,
             Self::EventCount => Some((0, 32000)),
-            Self::Height => Some((0, 320)),             // 0.00m - 3.20m
-            Self::Temperature => Some((-273, 3200)),    // -27.3℃ - 320℃
-            Self::PressureMPa => Some((0, 3200)),       // 0.0MPa - 100.0MPa
-            Self::PressureKPa => Some((0, 3200)),       // 0.0kPa - 1000.0kPa
-            Self::GasConcentration => Some((0, 100)),   // 0.0%LEL - 100.0%LEL
+            Self::Height => Some((0, 320)),           // 0.00m - 3.20m
+            Self::Temperature => Some((-273, 3200)),  // -27.3℃ - 320℃
+            Self::PressureMPa => Some((0, 3200)),     // 0.0MPa - 100.0MPa
+            Self::PressureKPa => Some((0, 3200)),     // 0.0kPa - 1000.0kPa
+            Self::GasConcentration => Some((0, 100)), // 0.0%LEL - 100.0%LEL
             Self::Time => Some((0, 32000)),
             Self::Voltage => Some((0, 3200)), // 0.0V - 320.0V
             Self::Current => Some((0, 3200)), // 0.0A - 320.0A
-            Self::Flow => Some((0, 32767)), // 修正为i16最大值
+            Self::Flow => Some((0, 32767)),   // 修正为i16最大值
             Self::AirFlow => Some((0, 3200)), // 0.0m³/min - 320.0m³/min
             Self::WindSpeed => Some((0, 20)), // 0m/s - 20m/s
             Self::Reserved(_) => None,
@@ -683,7 +683,7 @@ pub enum DataUnitType {
     /// 同步用户信息传输装置时钟
     SyncDeviceClock = 90,
     /// 查岗命令
-    PatrolCommand = 91,    
+    PatrolCommand = 91,
     /// 预留 (92-127)
     StandardReserved(u8),
     /// 用户自定义 (128-254)
@@ -735,7 +735,8 @@ impl DataUnitType {
             88 => Self::ReadDeviceTime,
             89 => Self::InitializeDevice,
             90 => Self::SyncDeviceClock,
-            91 => Self::PatrolCommand,            92..=127 => Self::StandardReserved(value),
+            91 => Self::PatrolCommand,
+            92..=127 => Self::StandardReserved(value),
             128..=254 => Self::UserDefined(value),
             255 => Self::StandardReserved(value), // 255 不在用户自定义范围内
         }
@@ -797,7 +798,8 @@ impl DataUnitType {
     /// 是否为上行数据类型
     pub fn is_upstream(&self) -> bool {
         matches!(self.to_u8(), 1..=28)
-    }    /// 是否为下行数据类型
+    }
+    /// 是否为下行数据类型
     pub fn is_downstream(&self) -> bool {
         matches!(self.to_u8(), 61..=91)
     }

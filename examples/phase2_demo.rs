@@ -1,5 +1,5 @@
 //! Phase 2 功能演示
-//! 
+//!
 //! 展示核心编解码功能
 
 use gb26875::prelude::*;
@@ -17,10 +17,10 @@ fn main() -> Result<(), Box<dyn std::error::Error>> {
 /// 基础数据包编解码演示
 fn basic_packet_demo() -> Result<(), Box<dyn std::error::Error>> {
     println!("1. 基础数据包编解码演示");
-    
+
     // 创建控制单元
     let control_unit = ControlUnit::new(
-        1,                   // 序列号
+        1,                          // 序列号
         ProtocolVersion::new(1, 0), // 协议版本
         Timestamp::now(),           // 时间戳
         0x123456,                   // 源地址
@@ -31,7 +31,7 @@ fn basic_packet_demo() -> Result<(), Box<dyn std::error::Error>> {
 
     // 创建数据包
     let packet = Packet::empty(control_unit);
-    
+
     // 编码
     let codec = PacketCodec::new();
     let encoded = gb26875::codec::traits::Encoder::encode(&codec, &packet)?;

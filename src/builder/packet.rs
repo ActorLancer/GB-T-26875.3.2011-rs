@@ -3,14 +3,14 @@
 //! 提供友好的数据包构建 API
 
 use crate::builder::{Builder, ResettableBuilder};
-use crate::error::{EncodeError, EncodeResult};
-use crate::frame::{Packet, ControlUnit, Timestamp};
-use crate::protocol::{Command, ProtocolVersion};
 use crate::data_unit::GenericDataUnit;
+use crate::error::{EncodeError, EncodeResult};
+use crate::frame::{ControlUnit, Packet, Timestamp};
+use crate::protocol::{Command, ProtocolVersion};
 use bytes::Bytes;
 
 /// 数据包构建器
-/// 
+///
 /// 提供链式调用接口来构建 GB26875 数据包
 #[derive(Debug, Clone)]
 pub struct PacketBuilder {
@@ -45,10 +45,10 @@ impl PacketBuilder {
     }
 
     /// 设置业务流水号
-    /// 
+    ///
     /// # Arguments
     /// * `sequence` - 业务流水号
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn sequence(mut self, sequence: u16) -> Self {
@@ -57,10 +57,10 @@ impl PacketBuilder {
     }
 
     /// 设置协议版本号
-    /// 
+    ///
     /// # Arguments
     /// * `version` - 协议版本号
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn version(mut self, version: ProtocolVersion) -> Self {
@@ -69,7 +69,7 @@ impl PacketBuilder {
     }
 
     /// 使用默认协议版本号（1.0）
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn default_version(mut self) -> Self {
@@ -78,10 +78,10 @@ impl PacketBuilder {
     }
 
     /// 设置发送时间标签
-    /// 
+    ///
     /// # Arguments
     /// * `timestamp` - 时间标签
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn timestamp(mut self, timestamp: Timestamp) -> Self {
@@ -90,7 +90,7 @@ impl PacketBuilder {
     }
 
     /// 使用当前时间作为时间标签
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn current_timestamp(mut self) -> Self {
@@ -99,10 +99,10 @@ impl PacketBuilder {
     }
 
     /// 设置源地址
-    /// 
+    ///
     /// # Arguments
     /// * `addr` - 源地址（6字节）
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回构建器实例
     pub fn source_address(mut self, addr: u64) -> EncodeResult<Self> {
@@ -118,10 +118,10 @@ impl PacketBuilder {
     }
 
     /// 设置目的地址
-    /// 
+    ///
     /// # Arguments
     /// * `addr` - 目的地址（6字节）
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回构建器实例
     pub fn destination_address(mut self, addr: u64) -> EncodeResult<Self> {
@@ -137,10 +137,10 @@ impl PacketBuilder {
     }
 
     /// 设置命令字节
-    /// 
+    ///
     /// # Arguments
     /// * `command` - 命令字节
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn command(mut self, command: Command) -> Self {
@@ -149,13 +149,14 @@ impl PacketBuilder {
     }
 
     /// 设置应用数据单元（原始字节）
-    /// 
+    ///
     /// # Arguments
     /// * `data` - 应用数据单元字节数据
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回构建器实例
-    pub fn data_unit_bytes(mut self, data: Bytes) -> EncodeResult<Self> {        if data.len() > crate::protocol::constants::MAX_DATA_UNIT_SIZE {
+    pub fn data_unit_bytes(mut self, data: Bytes) -> EncodeResult<Self> {
+        if data.len() > crate::protocol::constants::MAX_DATA_UNIT_SIZE {
             return Err(EncodeError::DataTooLarge {
                 size: data.len(),
                 max_size: crate::protocol::constants::MAX_DATA_UNIT_SIZE,
@@ -166,10 +167,10 @@ impl PacketBuilder {
     }
 
     /// 设置应用数据单元（从通用数据单元）
-    /// 
+    ///
     /// # Arguments
     /// * `data_unit` - 通用数据单元
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回构建器实例
     pub fn data_unit(self, data_unit: GenericDataUnit) -> EncodeResult<Self> {
@@ -178,7 +179,7 @@ impl PacketBuilder {
     }
 
     /// 清除应用数据单元
-    /// 
+    ///
     /// # Returns
     /// * `Self` - 构建器实例
     pub fn no_data_unit(mut self) -> Self {
@@ -187,16 +188,17 @@ impl PacketBuilder {
     }
 
     /// 创建心跳包构建器
-    /// 
+    ///
     /// # Arguments
     /// * `sequence` - 业务流水号
     /// * `source_addr` - 源地址
     /// * `dest_addr` - 目的地址
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回配置好的构建器
     pub fn heartbeat(sequence: u16, source_addr: u64, dest_addr: u64) -> EncodeResult<Self> {
-        Ok(PacketBuilder::new()            .sequence(sequence)
+        Ok(PacketBuilder::new()
+            .sequence(sequence)
             .default_version()
             .current_timestamp()
             .source_address(source_addr)?
@@ -206,15 +208,16 @@ impl PacketBuilder {
     }
 
     /// 创建状态查询包构建器
-    /// 
+    ///
     /// # Arguments
     /// * `sequence` - 业务流水号
     /// * `source_addr` - 源地址
     /// * `dest_addr` - 目的地址
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回配置好的构建器
-    pub fn status_query(sequence: u16, source_addr: u64, dest_addr: u64) -> EncodeResult<Self> {        Ok(PacketBuilder::new()
+    pub fn status_query(sequence: u16, source_addr: u64, dest_addr: u64) -> EncodeResult<Self> {
+        Ok(PacketBuilder::new()
             .sequence(sequence)
             .default_version()
             .current_timestamp()
@@ -225,13 +228,13 @@ impl PacketBuilder {
     }
 
     /// 创建状态上报包构建器
-    /// 
+    ///
     /// # Arguments
     /// * `sequence` - 业务流水号
     /// * `source_addr` - 源地址
     /// * `dest_addr` - 目的地址
     /// * `data_unit` - 状态数据单元
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回配置好的构建器
     pub fn status_upload(
@@ -239,7 +242,8 @@ impl PacketBuilder {
         source_addr: u64,
         dest_addr: u64,
         data_unit: GenericDataUnit,
-    ) -> EncodeResult<Self> {        Ok(PacketBuilder::new()
+    ) -> EncodeResult<Self> {
+        Ok(PacketBuilder::new()
             .sequence(sequence)
             .default_version()
             .current_timestamp()
@@ -250,12 +254,12 @@ impl PacketBuilder {
     }
 
     /// 创建确认包构建器
-    /// 
+    ///
     /// # Arguments
     /// * `sequence` - 业务流水号
     /// * `source_addr` - 源地址
     /// * `dest_addr` - 目的地址
-    /// 
+    ///
     /// # Returns
     /// * `Result<Self, EncodeError>` - 成功返回配置好的构建器
     pub fn acknowledgment(sequence: u16, source_addr: u64, dest_addr: u64) -> EncodeResult<Self> {
@@ -302,7 +306,8 @@ impl PacketBuilder {
 
 impl Builder<Packet> for PacketBuilder {
     fn build(self) -> EncodeResult<Packet> {
-        self.validate()?;        let control_unit = ControlUnit::new(
+        self.validate()?;
+        let control_unit = ControlUnit::new(
             self.sequence.unwrap(),
             self.version.unwrap(),
             self.timestamp.unwrap(),
@@ -310,7 +315,8 @@ impl Builder<Packet> for PacketBuilder {
             self.dest_addr.unwrap(),
             self.data_unit.as_ref().map(|d| d.len()).unwrap_or(0) as u16,
             self.command.unwrap(),
-        ).map_err(|e| EncodeError::TypeConversion(format!("Control unit creation failed: {}", e)))?;
+        )
+        .map_err(|e| EncodeError::TypeConversion(format!("Control unit creation failed: {}", e)))?;
 
         Packet::new(control_unit, self.data_unit)
     }
@@ -393,47 +399,57 @@ mod tests {
     use crate::protocol::SystemType;
 
     #[test]
-    fn test_packet_builder_basic() {        let packet = PacketBuilder::new()
+    fn test_packet_builder_basic() {
+        let packet = PacketBuilder::new()
             .sequence(1)
             .default_version()
             .current_timestamp()
-            .source_address(0x123456).unwrap()
-            .destination_address(0x654321).unwrap()
+            .source_address(0x123456)
+            .unwrap()
+            .destination_address(0x654321)
+            .unwrap()
             .command(Command::Control)
             .build()
             .unwrap();
 
         assert_eq!(packet.control_unit.sequence, 1);
         assert_eq!(packet.control_unit.source_addr, 0x123456);
-        assert_eq!(packet.control_unit.dest_addr, 0x654321);        assert_eq!(packet.control_unit.command, Command::Control);
+        assert_eq!(packet.control_unit.dest_addr, 0x654321);
+        assert_eq!(packet.control_unit.command, Command::Control);
         assert!(packet.data_unit().is_none());
     }
 
     #[test]
-    fn test_packet_builder_with_data_unit() {        let status = SystemStatus::new(
+    fn test_packet_builder_with_data_unit() {
+        let status = SystemStatus::new(
             SystemType::FireAlarm,
-            1,  // system_address
-            0x0002,  // system_state 
-            Timestamp::now()
+            1,      // system_address
+            0x0002, // system_state
+            Timestamp::now(),
         );
         let data_unit = GenericDataUnit::UploadSystemStatus(
-            crate::data_unit::standard::upstream::UploadSystemStatus::new(status, Timestamp::now())
+            crate::data_unit::standard::upstream::UploadSystemStatus::new(status, Timestamp::now()),
         );
 
         let packet = PacketBuilder::new()
             .sequence(2)
             .default_version()
             .current_timestamp()
-            .source_address(0x123456).unwrap()
-            .destination_address(0x654321).unwrap()
+            .source_address(0x123456)
+            .unwrap()
+            .destination_address(0x654321)
+            .unwrap()
             .command(Command::SendData)
-            .data_unit(data_unit).unwrap()
+            .data_unit(data_unit)
+            .unwrap()
             .build()
-            .unwrap();        assert_eq!(packet.control_unit.sequence, 2);
+            .unwrap();
+        assert_eq!(packet.control_unit.sequence, 2);
         assert_eq!(packet.control_unit.command, Command::SendData);
         assert!(packet.data_unit.is_some());
         assert_eq!(packet.control_unit.data_unit_len, 17); // UploadSystemStatus 是 17 字节 (1+10+6)
-    }    #[test]
+    }
+    #[test]
     fn test_packet_builder_heartbeat() {
         let packet = PacketBuilder::heartbeat(1, 0x123456, 0x654321)
             .unwrap()
@@ -458,8 +474,7 @@ mod tests {
 
     #[test]
     fn test_packet_builder_invalid_address() {
-        let result = PacketBuilder::new()
-            .source_address(0x1000000000000); // 超过 6 字节
+        let result = PacketBuilder::new().source_address(0x1000000000000); // 超过 6 字节
 
         assert!(result.is_err());
     }
@@ -470,8 +485,10 @@ mod tests {
             .sequence(1)
             .default_version()
             .current_timestamp()
-            .source_address(0x123456).unwrap()
-            .destination_address(0x654321).unwrap()
+            .source_address(0x123456)
+            .unwrap()
+            .destination_address(0x654321)
+            .unwrap()
             .command(Command::SendData);
 
         let packet = builder.build_and_reset().unwrap();
@@ -486,8 +503,10 @@ mod tests {
     fn test_packet_builder_getters() {
         let builder = PacketBuilder::new()
             .sequence(42)
-            .source_address(0x111111).unwrap()
-            .destination_address(0x222222).unwrap()
+            .source_address(0x111111)
+            .unwrap()
+            .destination_address(0x222222)
+            .unwrap()
             .command(Command::Request);
 
         assert_eq!(builder.get_sequence(), Some(42));

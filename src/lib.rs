@@ -72,7 +72,7 @@
 //! }
 //!
 //! // 注册扩展
-//! ExtensionManager::register_global(200, "MyCustomData".to_string(), 
+//! ExtensionManager::register_global(200, "MyCustomData".to_string(),
 //!     Box::new(|data| Ok(Box::new(MyCustomData { value: 42 }))))?;
 //! # Ok::<(), gb26875::extension::ExtensionError>(())
 //! ```
@@ -82,15 +82,15 @@
 #![cfg_attr(docsrs, feature(doc_cfg))]
 
 // 公共模块导出
-pub mod protocol;
-pub mod frame;
-pub mod data_unit;
-pub mod info_object;
-pub mod codec;
-pub mod parser;
 pub mod builder;
-pub mod extension;
+pub mod codec;
+pub mod data_unit;
 pub mod error;
+pub mod extension;
+pub mod frame;
+pub mod info_object;
+pub mod parser;
+pub mod protocol;
 
 // 可选模块
 #[cfg(feature = "serde")]
@@ -105,7 +105,7 @@ pub mod transport;
 pub mod prelude;
 
 // 重新导出核心类型
-pub use error::{ParseError, EncodeError, ExtensionError};
+pub use error::{EncodeError, ExtensionError, ParseError};
 pub use frame::Packet;
 
 /// 库版本信息

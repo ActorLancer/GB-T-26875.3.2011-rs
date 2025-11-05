@@ -24,7 +24,14 @@ pub struct Timestamp {
 
 impl Timestamp {
     /// 创建新的时间标签
-    pub fn new(second: u8, minute: u8, hour: u8, day: u8, month: u8, year: u8) -> ParseResult<Self> {
+    pub fn new(
+        second: u8,
+        minute: u8,
+        hour: u8,
+        day: u8,
+        month: u8,
+        year: u8,
+    ) -> ParseResult<Self> {
         // 验证时间字段的有效性
         if second > 59 {
             return Err(ParseError::InvalidTimestamp {
@@ -75,7 +82,8 @@ impl Timestamp {
 
     /// 从字节数组解析时间标签
     pub fn from_bytes(bytes: &[u8]) -> ParseResult<Self> {
-        if bytes.len() < 6 {            return Err(ParseError::TooShort {
+        if bytes.len() < 6 {
+            return Err(ParseError::TooShort {
                 actual: bytes.len(),
                 expected: 6,
             });
@@ -115,7 +123,7 @@ impl Timestamp {
         // 转换为本地时间（简化实现，实际应该考虑时区）
         let days = timestamp / 86400; // 天数
         let seconds_in_day = timestamp % 86400;
-        
+
         let hour = (seconds_in_day / 3600) as u8;
         let minute = ((seconds_in_day % 3600) / 60) as u8;
         let second = (seconds_in_day % 60) as u8;
@@ -125,7 +133,8 @@ impl Timestamp {
         let mut remaining_days = days;
 
         // 跳到2000年
-        if remaining_days >= 10957 { // 1970-2000的天数
+        if remaining_days >= 10957 {
+            // 1970-2000的天数
             year = 2000;
             remaining_days -= 10957;
         }
@@ -134,7 +143,7 @@ impl Timestamp {
         while remaining_days >= 365 {
             let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
             let days_in_year = if is_leap { 366 } else { 365 };
-            
+
             if remaining_days >= days_in_year {
                 remaining_days -= days_in_year;
                 year += 1;
@@ -145,8 +154,21 @@ impl Timestamp {
 
         // 计算月份和日期
         let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-        let days_in_month = [31, if is_leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        
+        let days_in_month = [
+            31,
+            if is_leap { 29 } else { 28 },
+            31,
+            30,
+            31,
+            30,
+            31,
+            31,
+            30,
+            31,
+            30,
+            31,
+        ];
+
         let mut month = 1;
         for &days in &days_in_month {
             if remaining_days >= days as u64 {
@@ -161,15 +183,14 @@ impl Timestamp {
         let year_2digit = ((year % 100) as u8).min(99);
 
         // 使用 unwrap_or 来处理可能的验证错误，提供默认值
-        Self::new(second, minute, hour, day, month, year_2digit)
-            .unwrap_or_else(|_| Self {
-                second: 0,
-                minute: 0,
-                hour: 0,
-                day: 1,
-                month: 1,
-                year: 25, // 2025年
-            })
+        Self::new(second, minute, hour, day, month, year_2digit).unwrap_or_else(|_| Self {
+            second: 0,
+            minute: 0,
+            hour: 0,
+            day: 1,
+            month: 1,
+            year: 25, // 2025年
+        })
     }
 
     /// 转换为完整年份（2000-2099）
@@ -207,8 +228,21 @@ impl Timestamp {
 
         // 添加月份的天数
         let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-        let days_in_month = [31, if is_leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        
+        let days_in_month = [
+            31,
+            if is_leap { 29 } else { 28 },
+            31,
+            30,
+            31,
+            30,
+            31,
+            31,
+            30,
+            31,
+            30,
+            31,
+        ];
+
         for month in 1..self.month {
             timestamp += days_in_month[(month - 1) as usize] as u64;
         }
@@ -228,7 +262,7 @@ impl Timestamp {
         // 这里使用简化实现，实际应该使用日期库
         let days = timestamp / 86400;
         let seconds_in_day = timestamp % 86400;
-        
+
         let hour = (seconds_in_day / 3600) as u8;
         let minute = ((seconds_in_day % 3600) / 60) as u8;
         let second = (seconds_in_day % 60) as u8;
@@ -240,7 +274,7 @@ impl Timestamp {
         while remaining_days >= 365 {
             let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
             let days_in_year = if is_leap { 366 } else { 365 };
-            
+
             if remaining_days >= days_in_year {
                 remaining_days -= days_in_year;
                 year += 1;
@@ -250,8 +284,21 @@ impl Timestamp {
         }
 
         let is_leap = year % 4 == 0 && (year % 100 != 0 || year % 400 == 0);
-        let days_in_month = [31, if is_leap { 29 } else { 28 }, 31, 30, 31, 30, 31, 31, 30, 31, 30, 31];
-        
+        let days_in_month = [
+            31,
+            if is_leap { 29 } else { 28 },
+            31,
+            30,
+            31,
+            30,
+            31,
+            31,
+            30,
+            31,
+            30,
+            31,
+        ];
+
         let mut month = 1;
         for &days in &days_in_month {
             if remaining_days >= days as u64 {
@@ -263,8 +310,8 @@ impl Timestamp {
         }
 
         let day = (remaining_days + 1) as u8;
-        let year_2digit = ((year % 100) as u8).min(99);        Self::new(second, minute, hour, day, month, year_2digit)
-            .unwrap_or_else(|_| Self::now())
+        let year_2digit = ((year % 100) as u8).min(99);
+        Self::new(second, minute, hour, day, month, year_2digit).unwrap_or_else(|_| Self::now())
     }
 
     /// 编码为字节序列（用于DataUnit trait）
@@ -320,8 +367,8 @@ mod tests {
         assert!(Timestamp::new(60, 0, 0, 1, 1, 0).is_err()); // 秒无效
         assert!(Timestamp::new(0, 60, 0, 1, 1, 0).is_err()); // 分无效
         assert!(Timestamp::new(0, 0, 24, 1, 1, 0).is_err()); // 时无效
-        assert!(Timestamp::new(0, 0, 0, 0, 1, 0).is_err());  // 日无效
-        assert!(Timestamp::new(0, 0, 0, 1, 0, 0).is_err());  // 月无效
+        assert!(Timestamp::new(0, 0, 0, 0, 1, 0).is_err()); // 日无效
+        assert!(Timestamp::new(0, 0, 0, 1, 0, 0).is_err()); // 月无效
         assert!(Timestamp::new(0, 0, 0, 1, 1, 100).is_err()); // 年无效
     }
 

@@ -79,7 +79,7 @@ impl Command {
     }
 
     /// 是否需要应用数据单元
-    /// 
+    ///
     /// 确认和否认命令通常不需要应用数据单元
     pub fn requires_data_unit(&self) -> bool {
         !matches!(self, Self::Acknowledge | Self::Reject)
@@ -96,7 +96,7 @@ impl Command {
     }
 
     /// 获取对应的响应命令
-    /// 
+    ///
     /// - Control -> Acknowledge/Reject
     /// - SendData -> Acknowledge/Reject  
     /// - Request -> Response/Reject
@@ -111,7 +111,8 @@ impl Command {
     /// 获取对应的拒绝命令
     pub fn get_reject_command(&self) -> Self {
         Self::Reject
-    }    /// 心跳命令别名
+    }
+    /// 心跳命令别名
     pub const HEARTBEAT: Self = Self::SendData;
     /// 状态查询别名  
     pub const STATUS_QUERY: Self = Self::Request;

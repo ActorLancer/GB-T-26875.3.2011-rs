@@ -31,17 +31,15 @@
 //!     .build()?;
 //! ```
 
-use crate::error::{ParseResult, ParseError};
-use crate::data_unit::GenericDataUnit;
 use crate::data_unit::standard::upstream;
-use crate::info_object::{
-    SystemStatus as InfoSystemStatus,
-    ComponentStatus as InfoComponentStatus, 
-    AnalogValue as InfoAnalogValue,
-    analog_value::AnalogType,
-};
+use crate::data_unit::GenericDataUnit;
+use crate::error::{ParseError, ParseResult};
 use crate::frame::Timestamp;
-use crate::protocol::types::{SystemType, ComponentType, DataUnitType};
+use crate::info_object::{
+    analog_value::AnalogType, AnalogValue as InfoAnalogValue,
+    ComponentStatus as InfoComponentStatus, SystemStatus as InfoSystemStatus,
+};
+use crate::protocol::types::{ComponentType, DataUnitType, SystemType};
 
 /// 数据单元构建器入口
 pub struct DataUnitBuilder {
@@ -142,11 +140,13 @@ impl SystemStatusBuilder {
             reason: "System type is required".to_string(),
         })?;
 
-        let system_address = self.system_address.ok_or_else(|| ParseError::InvalidValue {
-            field: "system_address".to_string(),
-            value: "None".to_string(),
-            reason: "System address is required".to_string(),
-        })?;
+        let system_address = self
+            .system_address
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "system_address".to_string(),
+                value: "None".to_string(),
+                reason: "System address is required".to_string(),
+            })?;
 
         let system_state = self.system_state.ok_or_else(|| ParseError::InvalidValue {
             field: "system_state".to_string(),
@@ -158,19 +158,14 @@ impl SystemStatusBuilder {
             field: "timestamp".to_string(),
             value: "None".to_string(),
             reason: "Timestamp is required".to_string(),
-        })?;        let system_status = InfoSystemStatus::new(
-            system_type,
-            system_address,
-            system_state,
-            timestamp,
-        );
+        })?;
+        let system_status =
+            InfoSystemStatus::new(system_type, system_address, system_state, timestamp);
 
         match self.data_unit_type {
-            DataUnitType::UploadSystemStatus => {
-                Ok(GenericDataUnit::UploadSystemStatus(
-                    upstream::UploadSystemStatus::new(system_status, timestamp)
-                ))
-            }
+            DataUnitType::UploadSystemStatus => Ok(GenericDataUnit::UploadSystemStatus(
+                upstream::UploadSystemStatus::new(system_status, timestamp),
+            )),
             _ => Err(ParseError::InvalidValue {
                 field: "data_unit_type".to_string(),
                 value: format!("{:?}", self.data_unit_type),
@@ -264,29 +259,37 @@ impl ComponentStatusBuilder {
             reason: "System type is required".to_string(),
         })?;
 
-        let system_address = self.system_address.ok_or_else(|| ParseError::InvalidValue {
-            field: "system_address".to_string(),
-            value: "None".to_string(),
-            reason: "System address is required".to_string(),
-        })?;
+        let system_address = self
+            .system_address
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "system_address".to_string(),
+                value: "None".to_string(),
+                reason: "System address is required".to_string(),
+            })?;
 
-        let component_type = self.component_type.ok_or_else(|| ParseError::InvalidValue {
-            field: "component_type".to_string(),
-            value: "None".to_string(),
-            reason: "Component type is required".to_string(),
-        })?;
+        let component_type = self
+            .component_type
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "component_type".to_string(),
+                value: "None".to_string(),
+                reason: "Component type is required".to_string(),
+            })?;
 
-        let component_address = self.component_address.ok_or_else(|| ParseError::InvalidValue {
-            field: "component_address".to_string(),
-            value: "None".to_string(),
-            reason: "Component address is required".to_string(),
-        })?;
+        let component_address = self
+            .component_address
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "component_address".to_string(),
+                value: "None".to_string(),
+                reason: "Component address is required".to_string(),
+            })?;
 
-        let component_state = self.component_state.ok_or_else(|| ParseError::InvalidValue {
-            field: "component_state".to_string(),
-            value: "None".to_string(),
-            reason: "Component state is required".to_string(),
-        })?;
+        let component_state = self
+            .component_state
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "component_state".to_string(),
+                value: "None".to_string(),
+                reason: "Component state is required".to_string(),
+            })?;
 
         let timestamp = self.timestamp.ok_or_else(|| ParseError::InvalidValue {
             field: "timestamp".to_string(),
@@ -302,12 +305,11 @@ impl ComponentStatusBuilder {
             component_state,
             self.component_description,
             timestamp,
-        );        match self.data_unit_type {
-            DataUnitType::UploadComponentStatus => {
-                Ok(GenericDataUnit::UploadComponentStatus(
-                    upstream::UploadComponentStatus::new(component_status, timestamp)
-                ))
-            }
+        );
+        match self.data_unit_type {
+            DataUnitType::UploadComponentStatus => Ok(GenericDataUnit::UploadComponentStatus(
+                upstream::UploadComponentStatus::new(component_status, timestamp),
+            )),
             _ => Err(ParseError::InvalidValue {
                 field: "data_unit_type".to_string(),
                 value: format!("{:?}", self.data_unit_type),
@@ -393,23 +395,29 @@ impl AnalogValueBuilder {
             reason: "System type is required".to_string(),
         })?;
 
-        let system_address = self.system_address.ok_or_else(|| ParseError::InvalidValue {
-            field: "system_address".to_string(),
-            value: "None".to_string(),
-            reason: "System address is required".to_string(),
-        })?;
+        let system_address = self
+            .system_address
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "system_address".to_string(),
+                value: "None".to_string(),
+                reason: "System address is required".to_string(),
+            })?;
 
-        let component_type = self.component_type.ok_or_else(|| ParseError::InvalidValue {
-            field: "component_type".to_string(),
-            value: "None".to_string(),
-            reason: "Component type is required".to_string(),
-        })?;
+        let component_type = self
+            .component_type
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "component_type".to_string(),
+                value: "None".to_string(),
+                reason: "Component type is required".to_string(),
+            })?;
 
-        let component_address = self.component_address.ok_or_else(|| ParseError::InvalidValue {
-            field: "component_address".to_string(),
-            value: "None".to_string(),
-            reason: "Component address is required".to_string(),
-        })?;
+        let component_address = self
+            .component_address
+            .ok_or_else(|| ParseError::InvalidValue {
+                field: "component_address".to_string(),
+                value: "None".to_string(),
+                reason: "Component address is required".to_string(),
+            })?;
 
         let analog_type = self.analog_type.ok_or_else(|| ParseError::InvalidValue {
             field: "analog_type".to_string(),
@@ -437,12 +445,11 @@ impl AnalogValueBuilder {
             analog_type,
             analog_value,
             timestamp,
-        );        match self.data_unit_type {
-            DataUnitType::UploadAnalogValue => {
-                Ok(GenericDataUnit::UploadAnalogValue(
-                    upstream::UploadAnalogValue::new(analog_val, timestamp)
-                ))
-            }
+        );
+        match self.data_unit_type {
+            DataUnitType::UploadAnalogValue => Ok(GenericDataUnit::UploadAnalogValue(
+                upstream::UploadAnalogValue::new(analog_val, timestamp),
+            )),
             _ => Err(ParseError::InvalidValue {
                 field: "data_unit_type".to_string(),
                 value: format!("{:?}", self.data_unit_type),
@@ -524,7 +531,7 @@ impl TimeInfoBuilder {
         Self { data_unit_type }
     }
 
-    /// 构建数据单元 (占位符实现) 
+    /// 构建数据单元 (占位符实现)
     pub fn build(self) -> ParseResult<GenericDataUnit> {
         Err(ParseError::InvalidValue {
             field: "time_info".to_string(),

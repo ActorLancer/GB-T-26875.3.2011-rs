@@ -10,32 +10,33 @@
 pub use crate::{Packet, VERSION};
 
 // 错误类型
-pub use crate::error::{ParseError, EncodeError, ExtensionError, ParseResult, EncodeResult};
+pub use crate::error::{EncodeError, EncodeResult, ExtensionError, ParseError, ParseResult};
 
 // 协议相关
-pub use crate::protocol::{Command, SystemType, ComponentType, AnalogType, DataUnitType, ProtocolVersion};
 pub use crate::frame::{ControlUnit, Timestamp};
-
-// 编解码
-pub use crate::codec::{Codec, PacketCodec, DataUnitCodec, StreamCodec};
-pub use crate::parser::{PacketParser, FrameDetector, DataValidator};
-
-// 构建器
-pub use crate::builder::packet::PacketBuilder;
-pub use crate::builder::data_unit::{
-    DataUnitBuilder, SystemStatusBuilder, ComponentStatusBuilder, AnalogValueBuilder
+pub use crate::protocol::{
+    AnalogType, Command, ComponentType, DataUnitType, ProtocolVersion, SystemType,
 };
 
+// 编解码
+pub use crate::codec::{Codec, DataUnitCodec, PacketCodec, StreamCodec};
+pub use crate::parser::{DataValidator, FrameDetector, PacketParser};
+
+// 构建器
+pub use crate::builder::data_unit::{
+    AnalogValueBuilder, ComponentStatusBuilder, DataUnitBuilder, SystemStatusBuilder,
+};
+pub use crate::builder::packet::PacketBuilder;
+
 // 数据单元
+pub use crate::data_unit::standard::{downstream, upstream};
 pub use crate::data_unit::{DataUnit, GenericDataUnit};
-pub use crate::data_unit::standard::{upstream, downstream};
 
 // 信息对象 (重新导出以便构建器使用)
 pub use crate::info_object::{
-    InfoObject, 
-    SystemStatus, ComponentStatus, AnalogValue, AnalogType as InfoAnalogType,
-    FireSystemOperation, DeviceOperation, FireSystemVersion, DeviceVersion,
-    FireSystemConfig, ComponentConfig, DeviceConfig
+    AnalogType as InfoAnalogType, AnalogValue, ComponentConfig, ComponentStatus, DeviceConfig,
+    DeviceOperation, DeviceVersion, FireSystemConfig, FireSystemOperation, FireSystemVersion,
+    InfoObject, SystemStatus,
 };
 
 // 扩展机制
@@ -46,4 +47,4 @@ pub use crate::extension::{ExtensionDataUnit, ExtensionManager, ExtensionRegistr
 pub use serde::{Deserialize, Serialize};
 
 #[cfg(feature = "async")]
-pub use crate::codec::{AsyncPacketCodec, AsyncDataUnitCodec};
+pub use crate::codec::{AsyncDataUnitCodec, AsyncPacketCodec};

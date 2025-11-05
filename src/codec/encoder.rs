@@ -2,16 +2,16 @@
 //!
 //! 提供统一的编码接口，支持将各种数据结构编码为GB26875协议字节流
 
+use super::traits::Encoder as EncoderTrait;
+use super::{DataUnitCodec, PacketCodec};
+use crate::data_unit::GenericDataUnit;
 use crate::error::{EncodeError, EncodeResult};
 use crate::frame::Packet;
-use crate::data_unit::GenericDataUnit;
-use super::traits::{Encoder as EncoderTrait};
-use super::{PacketCodec, DataUnitCodec};
-use bytes::{Bytes, BytesMut, BufMut};
+use bytes::{BufMut, Bytes, BytesMut};
 use std::collections::HashMap;
 
 /// 通用编码器
-/// 
+///
 /// 提供统一的编码接口，支持多种数据类型的编码
 #[derive(Debug, Clone)]
 pub struct Encoder {
@@ -80,14 +80,15 @@ impl Encoder {
     /// 更新编码器配置
     pub fn set_config(&mut self, config: EncoderConfig) {
         self.config = config;
-        
+
         // 重新创建数据单元编解码器
         self.data_unit_codec = if self.config.enable_extensions {
             DataUnitCodec::with_extensions()
         } else {
             DataUnitCodec::new()
         };
-    }    /// 编码数据包
+    }
+    /// 编码数据包
     pub fn encode_packet(&self, packet: &Packet) -> EncodeResult<Bytes> {
         crate::codec::traits::Encoder::encode(&self.packet_codec, packet)
     }
@@ -105,7 +106,7 @@ impl Encoder {
     /// 编码字符串（支持不同字符编码）
     pub fn encode_string(&self, s: &str, encoding: Option<&str>) -> EncodeResult<Bytes> {
         let encoding = encoding.unwrap_or(&self.config.default_encoding);
-        
+
         match encoding {
             "UTF-8" | "utf-8" => Ok(Bytes::from(s.as_bytes().to_vec())),
             _ => Ok(Bytes::from(s.as_bytes().to_vec())), // 简化处理，都用UTF-8
@@ -119,16 +120,19 @@ impl Encoder {
     {
         let mut buf = BytesMut::new();
         let num_value: f64 = value.into();
-        
+
         // 根据数值大小选择合适的编码方式
-        if num_value == num_value.trunc() && num_value >= i32::MIN as f64 && num_value <= i32::MAX as f64 {
+        if num_value == num_value.trunc()
+            && num_value >= i32::MIN as f64
+            && num_value <= i32::MAX as f64
+        {
             // 整数
             buf.put_i32_le(num_value as i32);
         } else {
             // 浮点数
             buf.put_f64_le(num_value);
         }
-        
+
         Ok(buf.freeze())
     }
 
@@ -233,11 +237,11 @@ mod tests {
     #[test]
     fn test_encode_boolean() {
         let encoder = Encoder::new();
-        
+
         let true_result = encoder.encode_boolean(true);
         assert!(true_result.is_ok());
         assert_eq!(true_result.unwrap()[0], 1);
-        
+
         let false_result = encoder.encode_boolean(false);
         assert!(false_result.is_ok());
         assert_eq!(false_result.unwrap()[0], 0);
@@ -248,7 +252,7 @@ mod tests {
         let mut config = EncoderConfig::default();
         config.enable_extensions = true;
         config.default_encoding = "UTF-8".to_string();
-        
+
         let encoder = Encoder::with_config(config);
         assert!(encoder.config().enable_extensions);
         assert_eq!(encoder.config().default_encoding, "UTF-8");

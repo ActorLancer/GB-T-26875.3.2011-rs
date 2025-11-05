@@ -2,15 +2,15 @@
 //!
 //! 提供基础的解码接口，支持从GB26875协议字节流解码为各种数据结构
 
+use super::traits::Decoder as DecoderTrait;
+use super::{DataUnitCodec, PacketCodec};
+use crate::data_unit::GenericDataUnit;
 use crate::error::{ParseError, ParseResult};
 use crate::frame::Packet;
-use crate::data_unit::GenericDataUnit;
-use super::traits::{Decoder as DecoderTrait};
-use super::{PacketCodec, DataUnitCodec};
 use bytes::Buf;
 
 /// 通用解码器
-/// 
+///
 /// 提供基础的解码接口，支持常见数据类型的解码
 #[derive(Debug, Clone)]
 pub struct Decoder {
@@ -87,7 +87,8 @@ impl Decoder {
         }
 
         self.packet_codec.decode(data)
-    }    /// 解码通用数据单元
+    }
+    /// 解码通用数据单元
     pub fn decode_data_unit(&self, data: &[u8]) -> ParseResult<GenericDataUnit> {
         self.data_unit_codec.decode_generic(data)
     }
@@ -124,7 +125,8 @@ impl Decoder {
         }
         let mut buf = &data[..];
         Ok(buf.get_f64_le())
-    }    /// 解码时间戳
+    }
+    /// 解码时间戳
     pub fn decode_timestamp(&self, data: &[u8]) -> ParseResult<[u8; 6]> {
         if data.len() != 6 {
             return Err(ParseError::InvalidDataLength {
@@ -214,13 +216,12 @@ impl Decoder {
     }
 
     /// 尝试解码数据包（非消费性）
-    /// 
+    ///
     /// 检查数据是否包含完整的数据包，但不移动缓冲区指针
     pub fn try_decode_packet(&self, data: &[u8]) -> ParseResult<Option<(Packet, usize)>> {
         match Packet::try_parse(data) {
             Ok((packet, consumed)) => Ok(Some((packet, consumed))),
-            Err(ParseError::InsufficientData { .. }) | 
-            Err(ParseError::TooShort { .. }) => Ok(None),
+            Err(ParseError::InsufficientData { .. }) | Err(ParseError::TooShort { .. }) => Ok(None),
             Err(e) => Err(e),
         }
     }
@@ -284,11 +285,11 @@ mod tests {
     #[test]
     fn test_decode_boolean() {
         let decoder = Decoder::new();
-        
+
         let true_data = [1];
         let result = decoder.decode_boolean(&true_data);
         assert_eq!(result.unwrap(), true);
-        
+
         let false_data = [0];
         let result = decoder.decode_boolean(&false_data);
         assert_eq!(result.unwrap(), false);

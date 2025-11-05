@@ -3,52 +3,52 @@
 //! 提供用户自定义数据单元的基础框架和扩展机制，
 //! 支持 128-254 范围内的自定义数据单元类型。
 
-use crate::error::{ParseResult, EncodeResult};
-use crate::protocol::DataUnitType;
 use crate::data_unit::DataUnit;
+use crate::error::{EncodeResult, ParseResult};
+use crate::protocol::DataUnitType;
 use bytes::Bytes;
 use std::any::Any;
 use std::collections::HashMap;
 use std::sync::{Arc, RwLock};
 
 /// 自定义数据单元 trait
-/// 
+///
 /// 用户自定义数据单元需要实现此 trait 以提供类型安全的
 /// 编解码功能和动态类型转换能力。
 pub trait CustomDataUnit: DataUnit + Send + Sync + 'static {
     /// 获取自定义数据单元的名称
     fn name(&self) -> &str;
-    
+
     /// 获取自定义数据单元的版本
     fn version(&self) -> &str {
         "1.0.0"
     }
-    
+
     /// 获取自定义数据单元的描述
     fn description(&self) -> Option<&str> {
         None
     }
-    
+
     /// 转换为 Any trait object，用于动态类型转换
     fn as_any(&self) -> &dyn Any;
-    
+
     /// 克隆自身为 Box<dyn CustomDataUnit>
     fn clone_box(&self) -> Box<dyn CustomDataUnit>;
 }
 
 /// 自定义数据单元工厂 trait
-/// 
+///
 /// 用于注册和创建自定义数据单元实例
 pub trait CustomDataUnitFactory: Send + Sync + 'static {
     /// 获取工厂支持的数据单元类型
     fn data_unit_type(&self) -> DataUnitType;
-    
+
     /// 从字节数据创建自定义数据单元实例
     fn create_from_bytes(&self, data: &[u8]) -> ParseResult<Box<dyn CustomDataUnit>>;
-    
+
     /// 获取工厂名称
     fn name(&self) -> &str;
-    
+
     /// 获取工厂描述
     fn description(&self) -> Option<&str> {
         None
@@ -56,7 +56,7 @@ pub trait CustomDataUnitFactory: Send + Sync + 'static {
 }
 
 /// 自定义数据单元注册表
-/// 
+///
 /// 全局注册表，用于管理用户自定义数据单元类型的注册和查找
 pub struct CustomDataUnitRegistry {
     factories: RwLock<HashMap<u8, Arc<dyn CustomDataUnitFactory>>>,
@@ -72,22 +72,22 @@ impl CustomDataUnitRegistry {
 
     /// 获取全局注册表实例
     pub fn global() -> &'static Self {
-        static INSTANCE: once_cell::sync::Lazy<CustomDataUnitRegistry> = 
+        static INSTANCE: once_cell::sync::Lazy<CustomDataUnitRegistry> =
             once_cell::sync::Lazy::new(|| CustomDataUnitRegistry::new());
         &*INSTANCE
     }
 
     /// 注册自定义数据单元工厂
-    /// 
+    ///
     /// # Arguments
     /// * `factory` - 自定义数据单元工厂
-    /// 
+    ///
     /// # Returns
     /// * `Result<(), RegistryError>` - 注册结果
     pub fn register(&self, factory: Arc<dyn CustomDataUnitFactory>) -> Result<(), RegistryError> {
         let data_type = factory.data_unit_type();
         let type_value = data_type.to_u8();
-        
+
         // 验证类型范围（128-254）
         if !(128..=254).contains(&type_value) {
             return Err(RegistryError::InvalidTypeRange {
@@ -95,9 +95,12 @@ impl CustomDataUnitRegistry {
                 expected_range: "128-254".to_string(),
             });
         }
-        
-        let mut factories = self.factories.write().map_err(|_| RegistryError::LockError)?;
-        
+
+        let mut factories = self
+            .factories
+            .write()
+            .map_err(|_| RegistryError::LockError)?;
+
         // 检查是否已注册
         if factories.contains_key(&type_value) {
             return Err(RegistryError::TypeAlreadyRegistered {
@@ -106,7 +109,7 @@ impl CustomDataUnitRegistry {
                 new_name: factory.name().to_string(),
             });
         }
-        
+
         factories.insert(type_value, factory);
         Ok(())
     }
@@ -114,51 +117,76 @@ impl CustomDataUnitRegistry {
     /// 注销自定义数据单元工厂
     pub fn unregister(&self, data_type: DataUnitType) -> Result<(), RegistryError> {
         let type_value = data_type.to_u8();
-        let mut factories = self.factories.write().map_err(|_| RegistryError::LockError)?;
-        
+        let mut factories = self
+            .factories
+            .write()
+            .map_err(|_| RegistryError::LockError)?;
+
         if factories.remove(&type_value).is_none() {
             return Err(RegistryError::TypeNotFound { type_value });
         }
-        
+
         Ok(())
     }
 
     /// 查找自定义数据单元工厂
-    pub fn get_factory(&self, data_type: DataUnitType) -> Result<Arc<dyn CustomDataUnitFactory>, RegistryError> {
+    pub fn get_factory(
+        &self,
+        data_type: DataUnitType,
+    ) -> Result<Arc<dyn CustomDataUnitFactory>, RegistryError> {
         let type_value = data_type.to_u8();
-        let factories = self.factories.read().map_err(|_| RegistryError::LockError)?;
-        
-        factories.get(&type_value)
+        let factories = self
+            .factories
+            .read()
+            .map_err(|_| RegistryError::LockError)?;
+
+        factories
+            .get(&type_value)
             .cloned()
             .ok_or(RegistryError::TypeNotFound { type_value })
     }
 
     /// 解析自定义数据单元
-    pub fn parse_custom(&self, data_type: DataUnitType, data: &[u8]) -> ParseResult<Box<dyn CustomDataUnit>> {
-        let factory = self.get_factory(data_type)
+    pub fn parse_custom(
+        &self,
+        data_type: DataUnitType,
+        data: &[u8],
+    ) -> ParseResult<Box<dyn CustomDataUnit>> {
+        let factory = self
+            .get_factory(data_type)
             .map_err(|e| crate::error::ParseError::Custom(format!("Registry error: {}", e)))?;
-        
+
         factory.create_from_bytes(data)
     }
 
     /// 列出所有已注册的类型
     pub fn list_registered_types(&self) -> Result<Vec<(u8, String)>, RegistryError> {
-        let factories = self.factories.read().map_err(|_| RegistryError::LockError)?;
-        
-        Ok(factories.iter()
+        let factories = self
+            .factories
+            .read()
+            .map_err(|_| RegistryError::LockError)?;
+
+        Ok(factories
+            .iter()
             .map(|(&type_value, factory)| (type_value, factory.name().to_string()))
             .collect())
     }
 
     /// 获取注册的工厂数量
     pub fn count(&self) -> Result<usize, RegistryError> {
-        let factories = self.factories.read().map_err(|_| RegistryError::LockError)?;
+        let factories = self
+            .factories
+            .read()
+            .map_err(|_| RegistryError::LockError)?;
         Ok(factories.len())
     }
 
     /// 清空所有注册的工厂（主要用于测试）
     pub fn clear(&self) -> Result<(), RegistryError> {
-        let mut factories = self.factories.write().map_err(|_| RegistryError::LockError)?;
+        let mut factories = self
+            .factories
+            .write()
+            .map_err(|_| RegistryError::LockError)?;
         factories.clear();
         Ok(())
     }
@@ -175,7 +203,7 @@ pub enum RegistryError {
         /// 期望的有效范围
         expected_range: String,
     },
-    
+
     /// 数据单元类型已被注册
     #[error("Type {type_value} already registered: existing='{existing_name}', new='{new_name}'")]
     TypeAlreadyRegistered {
@@ -186,21 +214,21 @@ pub enum RegistryError {
         /// 新尝试注册的名称
         new_name: String,
     },
-    
+
     /// 数据单元类型未在注册表中找到
     #[error("Type {type_value} not found in registry")]
     TypeNotFound {
         /// 未找到的类型值
         type_value: u8,
     },
-    
+
     /// 注册表锁错误
     #[error("Lock error in registry")]
     LockError,
 }
 
 /// 原始自定义数据单元
-/// 
+///
 /// 用于包装未知或未注册的自定义数据单元
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct RawCustomDataUnit {
@@ -246,10 +274,11 @@ impl DataUnit for RawCustomDataUnit {
 
     fn encode(&self) -> EncodeResult<Bytes> {
         Ok(self.data.clone())
-    }    fn parse(_data: &[u8]) -> ParseResult<Self> {
+    }
+    fn parse(_data: &[u8]) -> ParseResult<Self> {
         // 这个方法不应该被直接调用，因为我们需要数据类型信息
         Err(crate::error::ParseError::Custom(
-            "RawCustomDataUnit::parse requires data type information".to_string()
+            "RawCustomDataUnit::parse requires data type information".to_string(),
         ))
     }
 
@@ -370,28 +399,28 @@ mod tests {
     #[test]
     fn test_registry_basic_operations() {
         let registry = CustomDataUnitRegistry::new();
-        
+
         // 测试注册
         let factory = Arc::new(TestFactory);
         assert!(registry.register(factory.clone()).is_ok());
-        
+
         // 测试重复注册
         assert!(registry.register(factory).is_err());
-        
+
         // 测试查找
         let found_factory = registry.get_factory(DataUnitType::Custom(128));
         assert!(found_factory.is_ok());
-        
+
         // 测试解析
         let test_data = vec![1, 2, 3, 4];
         let parsed = registry.parse_custom(DataUnitType::Custom(128), &test_data);
         assert!(parsed.is_ok());
-        
+
         // 测试列表
         let types = registry.list_registered_types().unwrap();
         assert_eq!(types.len(), 1);
         assert_eq!(types[0], (128, "TestFactory".to_string()));
-        
+
         // 测试注销
         assert!(registry.unregister(DataUnitType::Custom(128)).is_ok());
         assert_eq!(registry.count().unwrap(), 0);
@@ -400,7 +429,7 @@ mod tests {
     #[test]
     fn test_invalid_type_range() {
         let registry = CustomDataUnitRegistry::new();
-        
+
         // 测试无效的类型范围
         struct InvalidFactory;
         impl CustomDataUnitFactory for InvalidFactory {
@@ -410,9 +439,11 @@ mod tests {
             fn create_from_bytes(&self, _data: &[u8]) -> ParseResult<Box<dyn CustomDataUnit>> {
                 unreachable!()
             }
-            fn name(&self) -> &str { "InvalidFactory" }
+            fn name(&self) -> &str {
+                "InvalidFactory"
+            }
         }
-        
+
         let factory = Arc::new(InvalidFactory);
         assert!(registry.register(factory).is_err());
     }
@@ -421,13 +452,13 @@ mod tests {
     fn test_raw_custom_data_unit() {
         let data = Bytes::from(vec![1, 2, 3, 4]);
         let raw = RawCustomDataUnit::new(DataUnitType::Custom(200), data.clone());
-        
+
         assert_eq!(raw.data_unit_type(), DataUnitType::Custom(200));
         assert_eq!(raw.encode().unwrap(), data);
         assert_eq!(raw.len(), 4);
         assert!(!raw.is_empty());
         assert_eq!(raw.name(), "RawCustomDataUnit");
-        
+
         // 测试带名称的版本
         let raw_with_name = raw.with_name("MyCustomUnit".to_string());
         assert_eq!(raw_with_name.name(), "MyCustomUnit");

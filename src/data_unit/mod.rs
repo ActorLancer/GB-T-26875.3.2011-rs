@@ -4,49 +4,48 @@
 //! 位于数据包的控制单元之后，结束符之前。
 //!
 //! ## 模块结构
-//! 
+//!
 //! - `identifier`: 数据单元标识符管理
 //! - `standard`: 标准数据单元实现（类型 1-127）
 //! - `custom`: 自定义数据单元抽象（类型 128-254）
 
 // 子模块声明
+pub mod custom;
 pub mod identifier;
 pub mod standard;
-pub mod custom;
 
 // 重新导出主要类型
-pub use identifier::{DataUnitIdentifier, DataUnitIdentifierParser};
-pub use standard::{upstream, downstream};
 pub use custom::{
-    CustomDataUnit, CustomDataUnitFactory, CustomDataUnitRegistry, 
-    RawCustomDataUnit, RegistryError
+    CustomDataUnit, CustomDataUnitFactory, CustomDataUnitRegistry, RawCustomDataUnit, RegistryError,
 };
+pub use identifier::{DataUnitIdentifier, DataUnitIdentifierParser};
+pub use standard::{downstream, upstream};
 
-use crate::error::{ParseResult, EncodeResult};
+use crate::error::{EncodeResult, ParseResult};
 use crate::protocol::DataUnitType;
 use bytes::Bytes;
 
 /// 应用数据单元基础 trait
-/// 
+///
 /// 所有应用数据单元都应该实现这个 trait，提供统一的
 /// 编解码接口和类型识别能力。
 pub trait DataUnit: std::fmt::Debug + Send + Sync {
     /// 获取数据单元类型
     fn data_unit_type(&self) -> DataUnitType;
-    
+
     /// 编码为字节序列
     fn encode(&self) -> EncodeResult<Bytes>;
-    
+
     /// 从字节序列解析
     fn parse(data: &[u8]) -> ParseResult<Self>
     where
         Self: Sized;
-    
+
     /// 验证数据单元的有效性
     fn validate(&self) -> ParseResult<()> {
         Ok(())
     }
-    
+
     /// 获取数据单元的字节长度
     fn byte_length(&self) -> usize {
         self.encode().map(|b| b.len()).unwrap_or(0)
@@ -54,7 +53,7 @@ pub trait DataUnit: std::fmt::Debug + Send + Sync {
 }
 
 /// 通用数据单元包装器
-/// 
+///
 /// 用于处理已知和未知类型的数据单元，支持运行时类型识别
 /// 和动态分发。支持标准数据单元和自定义数据单元的统一处理。
 #[derive(Debug)]
@@ -62,93 +61,93 @@ pub trait DataUnit: std::fmt::Debug + Send + Sync {
 pub enum GenericDataUnit {
     /// 上行数据单元 - 上传建筑消防设施系统状态 (类型1)
     UploadSystemStatus(standard::upstream::UploadSystemStatus),
-    
+
     /// 上行数据单元 - 上传建筑消防设施部件运行状态 (类型2)
     UploadComponentStatus(standard::upstream::UploadComponentStatus),
-    
+
     /// 上行数据单元 - 上传建筑消防设施部件模拟量值 (类型3)
     UploadAnalogValue(standard::upstream::UploadAnalogValue),
-    
+
     /// 上行数据单元 - 上传建筑消防设施操作信息 (类型4)
     UploadOperationInfo(standard::upstream::UploadOperationInfo),
-    
+
     /// 上行数据单元 - 上传建筑消防设施软件版本 (类型5)
     UploadSoftwareVersion(standard::upstream::UploadSoftwareVersion),
-    
+
     /// 上行数据单元 - 上传建筑消防设施系统配置情况 (类型6)
     UploadSystemConfig(standard::upstream::UploadSystemConfig),
-    
+
     /// 上行数据单元 - 上传建筑消防设施部件配置情况 (类型7)
     UploadComponentConfig(standard::upstream::UploadComponentConfig),
-    
+
     /// 上行数据单元 - 上传建筑消防设施系统时间 (类型8)
     UploadSystemTime(standard::upstream::UploadSystemTime),
-    
+
     /// 上行数据单元 - 上传用户信息传输装置运行状态 (类型21)
     UploadDeviceStatus(standard::upstream::UploadDeviceStatus),
-    
+
     /// 上行数据单元 - 上传用户信息传输装置操作信息 (类型24)
     UploadDeviceOperation(standard::upstream::UploadDeviceOperation),
-    
+
     /// 上行数据单元 - 上传用户信息传输装置软件版本 (类型25)
     UploadDeviceVersion(standard::upstream::UploadDeviceVersion),
-    
+
     /// 上行数据单元 - 上传用户信息传输装置配置情况 (类型26)
     UploadDeviceConfig(standard::upstream::UploadDeviceConfig),
-    
+
     /// 上行数据单元 - 上传用户信息传输装置系统时间 (类型28)
     UploadDeviceTime(standard::upstream::UploadDeviceTime),
-    
+
     /// 下行数据单元 - 读建筑消防设施系统状态 (类型61)
     ReadSystemStatus(standard::downstream::ReadSystemStatus),
-    
+
     /// 下行数据单元 - 读建筑消防设施部件运行状态 (类型62)
     ReadComponentStatus(standard::downstream::ReadComponentStatus),
-      /// 下行数据单元 - 读建筑消防设施模拟量值 (类型63)
+    /// 下行数据单元 - 读建筑消防设施模拟量值 (类型63)
     ReadAnalogValue(standard::downstream::ReadAnalogValue),
-    
+
     /// 下行数据单元 - 读建筑消防设施操作信息 (类型64)
     ReadOperationInfo(standard::downstream::ReadOperationInfo),
-    
+
     /// 下行数据单元 - 读建筑消防设施软件版本 (类型65)
     ReadSoftwareVersion(standard::downstream::ReadSoftwareVersion),
-    
+
     /// 下行数据单元 - 读建筑消防设施系统配置情况 (类型66)
     ReadSystemConfig(standard::downstream::ReadSystemConfig),
-    
+
     /// 下行数据单元 - 读建筑消防设施部件配置情况 (类型67)
     ReadComponentConfig(standard::downstream::ReadComponentConfig),
-    
+
     /// 下行数据单元 - 读建筑消防设施系统时间 (类型68)
     ReadSystemTime(standard::downstream::ReadSystemTime),
-    
+
     /// 下行数据单元 - 读用户信息传输装置运行状态 (类型81)
     ReadDeviceStatus(standard::downstream::ReadDeviceStatus),
-    
+
     /// 下行数据单元 - 读用户信息传输装置操作信息记录 (类型84)
     ReadDeviceOperation(standard::downstream::ReadDeviceOperation),
-    
+
     /// 下行数据单元 - 读用户信息传输装置软件版本 (类型85)
     ReadDeviceVersion(standard::downstream::ReadDeviceVersion),
-    
+
     /// 下行数据单元 - 读用户信息传输装置配置情况 (类型86)
     ReadDeviceConfig(standard::downstream::ReadDeviceConfig),
-    
+
     /// 下行数据单元 - 读用户信息传输装置系统时间 (类型88)
     ReadDeviceTime(standard::downstream::ReadDeviceTime),
-    
+
     /// 下行数据单元 - 初始化用户信息传输装置 (类型89)
     InitializeDevice(standard::downstream::InitializeDevice),
-    
+
     /// 下行数据单元 - 同步用户信息传输装置时钟 (类型90)
     SyncDeviceClock(standard::downstream::SyncDeviceClock),
-    
+
     /// 下行数据单元 - 查岗命令 (类型91)
     PatrolCommand(standard::downstream::PatrolCommand),
-    
+
     /// 自定义数据单元 (类型128-254)
     Custom(Box<dyn CustomDataUnit>),
-    
+
     /// 未知或无法解析的原始数据
     Raw {
         /// 数据单元类型
@@ -160,14 +159,14 @@ pub enum GenericDataUnit {
 
 impl GenericDataUnit {
     /// 从数据单元类型和原始数据创建通用数据单元
-    /// 
+    ///
     /// 这个方法会尝试解析标准数据单元类型，如果失败则尝试
     /// 自定义数据单元注册表，最后回退到原始数据包装。
-    /// 
+    ///
     /// # Arguments
     /// * `data_type` - 数据单元类型
     /// * `data` - 原始字节数据
-    /// 
+    ///
     /// # Returns
     /// * `Result<GenericDataUnit, ParseError>` - 成功返回解析的数据单元
     pub fn from_raw(data_type: DataUnitType, data: &[u8]) -> ParseResult<Self> {
@@ -225,7 +224,7 @@ impl GenericDataUnit {
                 let unit = standard::upstream::UploadDeviceTime::parse(data)?;
                 Ok(GenericDataUnit::UploadDeviceTime(unit))
             }
-            
+
             // 下行数据单元
             DataUnitType::ReadSystemStatus => {
                 let unit = standard::downstream::ReadSystemStatus::parse(data)?;
@@ -234,7 +233,8 @@ impl GenericDataUnit {
             DataUnitType::ReadComponentStatus => {
                 let unit = standard::downstream::ReadComponentStatus::parse(data)?;
                 Ok(GenericDataUnit::ReadComponentStatus(unit))
-            }            DataUnitType::ReadAnalogValue => {
+            }
+            DataUnitType::ReadAnalogValue => {
                 let unit = standard::downstream::ReadAnalogValue::parse(data)?;
                 Ok(GenericDataUnit::ReadAnalogValue(unit))
             }
@@ -290,7 +290,7 @@ impl GenericDataUnit {
                 let unit = standard::downstream::PatrolCommand::parse(data)?;
                 Ok(GenericDataUnit::PatrolCommand(unit))
             }
-            
+
             // 其他类型暂时保存为原始数据
             _ => Ok(GenericDataUnit::Raw {
                 data_type,
@@ -314,7 +314,8 @@ impl GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => unit.data_unit_type(),
             GenericDataUnit::UploadDeviceVersion(unit) => unit.data_unit_type(),
             GenericDataUnit::UploadDeviceConfig(unit) => unit.data_unit_type(),
-            GenericDataUnit::UploadDeviceTime(unit) => unit.data_unit_type(),            GenericDataUnit::ReadSystemStatus(unit) => unit.data_unit_type(),
+            GenericDataUnit::UploadDeviceTime(unit) => unit.data_unit_type(),
+            GenericDataUnit::ReadSystemStatus(unit) => unit.data_unit_type(),
             GenericDataUnit::ReadComponentStatus(unit) => unit.data_unit_type(),
             GenericDataUnit::ReadAnalogValue(unit) => unit.data_unit_type(),
             GenericDataUnit::ReadOperationInfo(unit) => unit.data_unit_type(),
@@ -350,7 +351,8 @@ impl GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => unit.encode(),
             GenericDataUnit::UploadDeviceVersion(unit) => unit.encode(),
             GenericDataUnit::UploadDeviceConfig(unit) => unit.encode(),
-            GenericDataUnit::UploadDeviceTime(unit) => unit.encode(),            GenericDataUnit::ReadSystemStatus(unit) => unit.encode(),
+            GenericDataUnit::UploadDeviceTime(unit) => unit.encode(),
+            GenericDataUnit::ReadSystemStatus(unit) => unit.encode(),
             GenericDataUnit::ReadComponentStatus(unit) => unit.encode(),
             GenericDataUnit::ReadAnalogValue(unit) => unit.encode(),
             GenericDataUnit::ReadOperationInfo(unit) => unit.encode(),
@@ -386,7 +388,8 @@ impl GenericDataUnit {
             GenericDataUnit::UploadDeviceOperation(unit) => unit.validate(),
             GenericDataUnit::UploadDeviceVersion(unit) => unit.validate(),
             GenericDataUnit::UploadDeviceConfig(unit) => unit.validate(),
-            GenericDataUnit::UploadDeviceTime(unit) => unit.validate(),            GenericDataUnit::ReadSystemStatus(unit) => unit.validate(),
+            GenericDataUnit::UploadDeviceTime(unit) => unit.validate(),
+            GenericDataUnit::ReadSystemStatus(unit) => unit.validate(),
             GenericDataUnit::ReadComponentStatus(unit) => unit.validate(),
             GenericDataUnit::ReadAnalogValue(unit) => unit.validate(),
             GenericDataUnit::ReadOperationInfo(unit) => unit.validate(),
@@ -440,40 +443,90 @@ impl GenericDataUnit {
 
 impl std::fmt::Display for GenericDataUnit {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        write!(f, "{} ({})", self.description(), self.data_unit_type().to_u8())
+        write!(
+            f,
+            "{} ({})",
+            self.description(),
+            self.data_unit_type().to_u8()
+        )
     }
 }
 
 impl Clone for GenericDataUnit {
     fn clone(&self) -> Self {
         match self {
-            GenericDataUnit::UploadSystemStatus(unit) => GenericDataUnit::UploadSystemStatus(unit.clone()),
-            GenericDataUnit::UploadComponentStatus(unit) => GenericDataUnit::UploadComponentStatus(unit.clone()),
-            GenericDataUnit::UploadAnalogValue(unit) => GenericDataUnit::UploadAnalogValue(unit.clone()),
-            GenericDataUnit::UploadOperationInfo(unit) => GenericDataUnit::UploadOperationInfo(unit.clone()),
-            GenericDataUnit::UploadSoftwareVersion(unit) => GenericDataUnit::UploadSoftwareVersion(unit.clone()),
-            GenericDataUnit::UploadSystemConfig(unit) => GenericDataUnit::UploadSystemConfig(unit.clone()),
-            GenericDataUnit::UploadComponentConfig(unit) => GenericDataUnit::UploadComponentConfig(unit.clone()),
-            GenericDataUnit::UploadSystemTime(unit) => GenericDataUnit::UploadSystemTime(unit.clone()),
-            GenericDataUnit::UploadDeviceStatus(unit) => GenericDataUnit::UploadDeviceStatus(unit.clone()),
-            GenericDataUnit::UploadDeviceOperation(unit) => GenericDataUnit::UploadDeviceOperation(unit.clone()),
-            GenericDataUnit::UploadDeviceVersion(unit) => GenericDataUnit::UploadDeviceVersion(unit.clone()),
-            GenericDataUnit::UploadDeviceConfig(unit) => GenericDataUnit::UploadDeviceConfig(unit.clone()),
-            GenericDataUnit::UploadDeviceTime(unit) => GenericDataUnit::UploadDeviceTime(unit.clone()),            GenericDataUnit::ReadSystemStatus(unit) => GenericDataUnit::ReadSystemStatus(unit.clone()),
-            GenericDataUnit::ReadComponentStatus(unit) => GenericDataUnit::ReadComponentStatus(unit.clone()),
-            GenericDataUnit::ReadAnalogValue(unit) => GenericDataUnit::ReadAnalogValue(unit.clone()),
-            GenericDataUnit::ReadOperationInfo(unit) => GenericDataUnit::ReadOperationInfo(unit.clone()),
-            GenericDataUnit::ReadSoftwareVersion(unit) => GenericDataUnit::ReadSoftwareVersion(*unit),
-            GenericDataUnit::ReadSystemConfig(unit) => GenericDataUnit::ReadSystemConfig(unit.clone()),
-            GenericDataUnit::ReadComponentConfig(unit) => GenericDataUnit::ReadComponentConfig(unit.clone()),
+            GenericDataUnit::UploadSystemStatus(unit) => {
+                GenericDataUnit::UploadSystemStatus(unit.clone())
+            }
+            GenericDataUnit::UploadComponentStatus(unit) => {
+                GenericDataUnit::UploadComponentStatus(unit.clone())
+            }
+            GenericDataUnit::UploadAnalogValue(unit) => {
+                GenericDataUnit::UploadAnalogValue(unit.clone())
+            }
+            GenericDataUnit::UploadOperationInfo(unit) => {
+                GenericDataUnit::UploadOperationInfo(unit.clone())
+            }
+            GenericDataUnit::UploadSoftwareVersion(unit) => {
+                GenericDataUnit::UploadSoftwareVersion(unit.clone())
+            }
+            GenericDataUnit::UploadSystemConfig(unit) => {
+                GenericDataUnit::UploadSystemConfig(unit.clone())
+            }
+            GenericDataUnit::UploadComponentConfig(unit) => {
+                GenericDataUnit::UploadComponentConfig(unit.clone())
+            }
+            GenericDataUnit::UploadSystemTime(unit) => {
+                GenericDataUnit::UploadSystemTime(unit.clone())
+            }
+            GenericDataUnit::UploadDeviceStatus(unit) => {
+                GenericDataUnit::UploadDeviceStatus(unit.clone())
+            }
+            GenericDataUnit::UploadDeviceOperation(unit) => {
+                GenericDataUnit::UploadDeviceOperation(unit.clone())
+            }
+            GenericDataUnit::UploadDeviceVersion(unit) => {
+                GenericDataUnit::UploadDeviceVersion(unit.clone())
+            }
+            GenericDataUnit::UploadDeviceConfig(unit) => {
+                GenericDataUnit::UploadDeviceConfig(unit.clone())
+            }
+            GenericDataUnit::UploadDeviceTime(unit) => {
+                GenericDataUnit::UploadDeviceTime(unit.clone())
+            }
+            GenericDataUnit::ReadSystemStatus(unit) => {
+                GenericDataUnit::ReadSystemStatus(unit.clone())
+            }
+            GenericDataUnit::ReadComponentStatus(unit) => {
+                GenericDataUnit::ReadComponentStatus(unit.clone())
+            }
+            GenericDataUnit::ReadAnalogValue(unit) => {
+                GenericDataUnit::ReadAnalogValue(unit.clone())
+            }
+            GenericDataUnit::ReadOperationInfo(unit) => {
+                GenericDataUnit::ReadOperationInfo(unit.clone())
+            }
+            GenericDataUnit::ReadSoftwareVersion(unit) => {
+                GenericDataUnit::ReadSoftwareVersion(*unit)
+            }
+            GenericDataUnit::ReadSystemConfig(unit) => {
+                GenericDataUnit::ReadSystemConfig(unit.clone())
+            }
+            GenericDataUnit::ReadComponentConfig(unit) => {
+                GenericDataUnit::ReadComponentConfig(unit.clone())
+            }
             GenericDataUnit::ReadSystemTime(unit) => GenericDataUnit::ReadSystemTime(*unit),
             GenericDataUnit::ReadDeviceStatus(unit) => GenericDataUnit::ReadDeviceStatus(*unit),
-            GenericDataUnit::ReadDeviceOperation(unit) => GenericDataUnit::ReadDeviceOperation(unit.clone()),
+            GenericDataUnit::ReadDeviceOperation(unit) => {
+                GenericDataUnit::ReadDeviceOperation(unit.clone())
+            }
             GenericDataUnit::ReadDeviceVersion(unit) => GenericDataUnit::ReadDeviceVersion(*unit),
             GenericDataUnit::ReadDeviceConfig(unit) => GenericDataUnit::ReadDeviceConfig(*unit),
             GenericDataUnit::ReadDeviceTime(unit) => GenericDataUnit::ReadDeviceTime(*unit),
             GenericDataUnit::InitializeDevice(unit) => GenericDataUnit::InitializeDevice(*unit),
-            GenericDataUnit::SyncDeviceClock(unit) => GenericDataUnit::SyncDeviceClock(unit.clone()),
+            GenericDataUnit::SyncDeviceClock(unit) => {
+                GenericDataUnit::SyncDeviceClock(unit.clone())
+            }
             GenericDataUnit::PatrolCommand(unit) => GenericDataUnit::PatrolCommand(*unit),
             GenericDataUnit::Custom(unit) => GenericDataUnit::Custom(unit.clone_box()),
             GenericDataUnit::Raw { data_type, data } => GenericDataUnit::Raw {
@@ -492,15 +545,15 @@ mod tests {
     fn test_generic_data_unit_creation() {
         // 测试从原始数据创建
         let data = vec![1, 2, 3, 4];
-        
+
         // 测试未知类型
         let raw_unit = GenericDataUnit::Raw {
             data_type: DataUnitType::UploadSystemStatus,
             data: Bytes::from(data.clone()),
         };
-        
+
         assert_eq!(raw_unit.data_unit_type(), DataUnitType::UploadSystemStatus);
-        
+
         // 测试类型判断
         assert!(raw_unit.is_upstream());
         assert!(!raw_unit.is_downstream());
@@ -514,12 +567,12 @@ mod tests {
         assert!(!id.is_downstream());
         assert!(!id.is_custom);
         assert_eq!(id.category(), "上行数据单元");
-        
+
         let id61 = DataUnitIdentifier::from_u8(61).unwrap();
         assert!(!id61.is_upstream());
         assert!(id61.is_downstream());
         assert!(!id61.is_custom);
-        
+
         let id128 = DataUnitIdentifier::from_u8(128).unwrap();
         assert!(!id128.is_upstream());
         assert!(!id128.is_downstream());
