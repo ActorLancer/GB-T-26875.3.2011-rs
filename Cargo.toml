@@ -47,7 +47,7 @@ name = "debug_packet"
 path = "src/bin/debug_packet.rs"
 
 [features]
-default = []
+default = ["serde", "async", "logging", "encoding", "macros"]
 
 # 序列化支持
 serde = ["dep:serde", "dep:serde_json"]
