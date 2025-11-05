@@ -54,6 +54,10 @@ pub fn expand_system_type(input: &DeriveInput) -> Result<TokenStream> {
                     reason: "System status decoding not implemented yet".to_string(),
                 })
             }
+
+            fn clone_boxed(&self) -> Box<dyn gb26875::extension::SystemTypeExtension> {
+                Box::new(*self)
+            }
         }
 
         // 实现 Clone trait（如果还没有）

@@ -80,6 +80,10 @@ pub fn expand_analog_type(input: &DeriveInput) -> Result<TokenStream> {
                     reason: "Analog value decoding not implemented yet".to_string(),
                 })
             }
+
+            fn clone_boxed(&self) -> Box<dyn gb26875::extension::AnalogTypeExtension> {
+                Box::new(*self)
+            }
         }
 
         // 实现 Clone trait（如果还没有）

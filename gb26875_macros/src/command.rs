@@ -30,7 +30,8 @@ pub fn expand_command(input: &DeriveInput) -> Result<TokenStream> {
     );
 
     let expanded = quote! {
-        #registration_code        impl gb26875::extension::CommandExtension for #struct_name {
+        #registration_code        
+        impl gb26875::extension::CommandExtension for #struct_name {
             fn command_code(&self) -> u8 {
                 #code
             }

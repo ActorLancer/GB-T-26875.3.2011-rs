@@ -2,8 +2,6 @@
 //!
 //! 定义了扩展数据单元需要实现的 trait 和相关类型
 
-#[cfg(test)]
-use crate::error::ParseError;
 use bytes::Bytes;
 use std::any::Any;
 use std::fmt;
@@ -364,10 +362,9 @@ mod tests {
     impl ExtensionDataUnitParser<TestExtension> for TestExtension {
         fn parse(data: &[u8]) -> ExtensionResult<TestExtension> {
             if data.len() < 4 {
-                return Err(ExtensionError::ParseError(ParseError::InvalidDataLength {
-                    expected: 4,
-                    actual: data.len(),
-                }));
+                return Err(ExtensionError::ParseError(
+                    format!("期望数据长度至少为4字节，实际为{}字节", data.len())
+                ));
             }
 
             let value = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
@@ -574,7 +571,7 @@ pub trait DataUnitExtensionParser {
 /// 系统类型扩展trait
 ///
 /// 用于定义自定义系统类型（128-255范围）
-pub trait SystemTypeExtension: ExtensionTrait + Clone + Copy {
+pub trait SystemTypeExtension: ExtensionTrait {
     /// 获取系统类型代码
     fn system_type_code(&self) -> u8;
 
@@ -592,12 +589,15 @@ pub trait SystemTypeExtension: ExtensionTrait + Clone + Copy {
         &self,
         data: &[u8],
     ) -> ExtensionResult<crate::info_object::SystemStatus>;
+
+    /// 克隆为Box包装的trait对象
+    fn clone_boxed(&self) -> Box<dyn SystemTypeExtension>;
 }
 
 /// 部件类型扩展trait
 ///
 /// 用于定义自定义部件类型（128-255范围）
-pub trait ComponentTypeExtension: ExtensionTrait + Clone + Copy {
+pub trait ComponentTypeExtension: ExtensionTrait {
     /// 获取部件类型代码
     fn component_type_code(&self) -> u8;
 
@@ -615,12 +615,15 @@ pub trait ComponentTypeExtension: ExtensionTrait + Clone + Copy {
         &self,
         data: &[u8],
     ) -> ExtensionResult<crate::info_object::ComponentStatus>;
+
+    /// 克隆为Box包装的trait对象
+    fn clone_boxed(&self) -> Box<dyn ComponentTypeExtension>;
 }
 
 /// 模拟量类型扩展trait
 ///
 /// 用于定义自定义模拟量类型（128-255范围）
-pub trait AnalogTypeExtension: ExtensionTrait + Clone + Copy {
+pub trait AnalogTypeExtension: ExtensionTrait {
     /// 获取模拟量类型代码
     fn analog_type_code(&self) -> u8;
 
@@ -647,4 +650,7 @@ pub trait AnalogTypeExtension: ExtensionTrait + Clone + Copy {
 
     /// 解码模拟量值
     fn decode_analog_value(&self, data: &[u8]) -> ExtensionResult<crate::info_object::AnalogValue>;
+
+    /// 克隆为Box包装的trait对象
+    fn clone_boxed(&self) -> Box<dyn AnalogTypeExtension>;
 }

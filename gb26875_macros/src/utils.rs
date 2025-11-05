@@ -107,7 +107,7 @@ pub fn generate_extension_id(struct_name: &Ident) -> TokenStream {
 /// 生成基础的扩展注册代码
 pub fn generate_registration_code(
     struct_name: &Ident,
-    trait_name: &Ident,
+    _trait_name: &Ident,
     extension_type: &str,
 ) -> TokenStream {
     let extension_id = generate_extension_id(struct_name);

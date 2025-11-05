@@ -60,10 +60,10 @@ pub fn expand_data_unit(input: &DeriveInput) -> Result<TokenStream> {
 
         impl gb26875::extension::DataUnitExtensionParser for #struct_name {
             fn decode(_data: &[u8]) -> gb26875::extension::ExtensionResult<Box<dyn gb26875::extension::DataUnitExtension>> {
-                // 默认实现：反序列化结构体字段
-                // 这里可以根据字段类型生成具体的解码逻辑
-                // 暂时返回默认实例
-                Ok(Box::new(#struct_name::default()))
+                // 默认实现：返回验证错误，提示用户需要实现具体的解码逻辑
+                Err(gb26875::extension::ExtensionError::ValidationError {
+                    reason: format!("{}类型的解码功能尚未实现", stringify!(#struct_name))
+                })
             }
         }
     };

@@ -54,6 +54,10 @@ pub fn expand_component_type(input: &DeriveInput) -> Result<TokenStream> {
                     reason: "Component status decoding not implemented yet".to_string(),
                 })
             }
+
+            fn clone_boxed(&self) -> Box<dyn gb26875::extension::ComponentTypeExtension> {
+                Box::new(*self)
+            }
         }
 
         // 实现 Clone trait（如果还没有）

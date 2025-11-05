@@ -483,15 +483,11 @@ mod tests {
     }
 
     impl TestExtension {
-        fn parse(type_id: u8, data: &[u8]) -> ExtensionResult<Self> {
-            if data.len() != 4 {
-                return Err(ExtensionError::ParseError(
-                    crate::error::ParseError::InvalidDataLength {
-                        expected: 4,
-                        actual: data.len(),
-                    },
-                ));
-            }
+        fn parse(type_id: u8, data: &[u8]) -> ExtensionResult<Self> {        if data.len() != 4 {
+            return Err(ExtensionError::ParseError(
+                format!("期望数据长度为4字节，实际为{}字节", data.len())
+            ));
+        }
 
             let value = u32::from_le_bytes([data[0], data[1], data[2], data[3]]);
             Ok(TestExtension { type_id, value })
